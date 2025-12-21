@@ -9,6 +9,7 @@ class SharedPrefHelper {
       await prefs.setString(key, value);
     } catch (e) {
       debugPrint('Error saving string to SharedPreferences: $e');
+      rethrow;
     }
   }
 
@@ -67,6 +68,7 @@ class SharedPrefHelper {
       await prefs.setString(key, jsonString);
     } catch (e) {
       debugPrint('Error saving object to SharedPreferences: $e');
+      rethrow;
     }
   }
 

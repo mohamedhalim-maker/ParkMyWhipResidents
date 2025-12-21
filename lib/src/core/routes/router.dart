@@ -10,14 +10,14 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forg
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/reset_password_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/password_reset_success_page.dart';
 import 'package:park_my_whip_residents/src/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class AppRouter {
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   static Future<String> getInitialRoute() async {
     try {
-      final session = Supabase.instance.client.auth.currentSession;
+      final session = SupabaseConfig.auth.currentSession;
       if (session != null) {
         return RoutesName.dashboard;
       }

@@ -2,19 +2,19 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:park_my_whip_residents/auth/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
-import 'package:park_my_whip_residents/src/features/auth/data/data_sources/auth_remote_data_source.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit({
     required this.validators,
-    required this.authRemoteDataSource,
+    required this.authManager,
   }) : super(const AuthState());
 
   final Validators validators;
-  final AuthRemoteDataSource authRemoteDataSource;
+  final AuthManager authManager;
 
   // Text controllers
   final TextEditingController emailController = TextEditingController();
@@ -117,17 +117,20 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(isLoading: true, loginGeneralError: null));
 
     try {
-      final user = await authRemoteDataSource.signIn(
+      final user = await (authManager as EmailSignInManager).signInWithEmail(
+        context,
         loginEmailController.text.trim(),
         loginPasswordController.text.trim(),
       );
 
-      log('User logged in successfully: ${user.email}', name: 'AuthCubit');
-      emit(state.copyWith(isLoading: false));
-      
-      // Navigate to dashboard on successful login
-      if (context.mounted) {
-        Navigator.of(context).pushReplacementNamed(RoutesName.dashboard);
+      if (user != null) {
+        log('User logged in successfully: ${user.email}', name: 'AuthCubit');
+        emit(state.copyWith(isLoading: false));
+        
+        // Navigate to dashboard on successful login
+        if (context.mounted) {
+          Navigator.of(context).pushReplacementNamed(RoutesName.dashboard);
+        }
       }
     } catch (e) {
       log('Login error: $e', name: 'AuthCubit', level: 900);
@@ -145,25 +148,12 @@ class AuthCubit extends Cubit<AuthState> {
 
     emit(state.copyWith(isLoading: true, errorMessage: null, successMessage: null));
 
-    try {
-      final user = await authRemoteDataSource.signIn(
-        emailController.text.trim(),
-        passwordController.text.trim(),
-      );
-
-      log('User logged in successfully: ${user.email}', name: 'AuthCubit');
-      emit(state.copyWith(
-        isLoading: false,
-        successMessage: 'Login successful!',
-      ));
-    } catch (e) {
-      log('Login error: $e', name: 'AuthCubit', level: 900);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        errorMessage: errorMessage.isEmpty ? 'An error occurred during login' : errorMessage,
-      ));
-    }
+    // TODO: Implement Supabase authentication after reconnecting
+    log('Sign in validation passed - awaiting Supabase setup', name: 'AuthCubit');
+    emit(state.copyWith(
+      isLoading: false,
+      errorMessage: 'Authentication not configured. Please connect Supabase.',
+    ));
   }
 
   // Validate sign in fields
@@ -211,7 +201,10 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(isLoading: true, forgotPasswordEmailError: null));
 
     try {
-      await authRemoteDataSource.resetPassword(forgotPasswordEmailController.text.trim());
+      await authManager.resetPassword(
+        email: forgotPasswordEmailController.text.trim(),
+        context: context,
+      );
       log('Password reset email sent', name: 'AuthCubit');
       emit(state.copyWith(isLoading: false));
       
@@ -252,7 +245,10 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(isLoading: true, forgotPasswordEmailError: null));
 
     try {
-      await authRemoteDataSource.resetPassword(forgotPasswordEmailController.text.trim());
+      await authManager.resetPassword(
+        email: forgotPasswordEmailController.text.trim(),
+        context: context,
+      );
       log('Password reset email resent', name: 'AuthCubit');
       emit(state.copyWith(isLoading: false));
       
@@ -321,8 +317,11 @@ class AuthCubit extends Cubit<AuthState> {
     emit(state.copyWith(isLoading: true, resetPasswordError: null, resetConfirmPasswordError: null));
 
     try {
-      await authRemoteDataSource.updatePassword(resetPasswordController.text.trim());
-      log('Password reset successful', name: 'AuthCubit');
+      await authManager.updatePassword(
+        newPassword: resetPasswordController.text.trim(),
+        context: context,
+      );
+      log('Password updated successfully', name: 'AuthCubit');
       emit(state.copyWith(isLoading: false));
       
       // Navigate to success page

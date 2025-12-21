@@ -1,167 +1,29 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
+/// Generic Supabase configuration template
+/// Replace YOUR_ and YOUR_ with your actual values
 class SupabaseConfig {
-  static bool _isInitialized = false;
-  
+  static const String supabaseUrl = 'https://iwvwieznrsokscxibgiw.supabase.co';
+  static const String anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3dndpZXpucnNva3NjeGliZ2l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MDY5OTYsImV4cCI6MjA4MTM4Mjk5Nn0.D0JiKreqxqLrTKohszYXQWaS-cQsAdmiaYIePQCSBFU';
+
   static Future<void> initialize() async {
-    // Prevent double initialization
-    if (_isInitialized) {
-      debugPrint('Supabase already initialized');
-      return;
-    }
-    
-    try {
-      // Supabase is automatically initialized by Dreamflow when connected via the Supabase panel
-      // Check if Dreamflow has already initialized it
-      final client = Supabase.instance.client;
-      _isInitialized = true;
-      debugPrint('Supabase instance found (initialized by Dreamflow)');
-      return;
-    } catch (e) {
-      debugPrint('Supabase not initialized by Dreamflow, attempting manual initialization');
-    }
-    
-    // Manual initialization fallback
-    // Get environment variables or use placeholders
-    const supabaseUrl = String.fromEnvironment(
-      'SUPABASE_URL',
-      defaultValue: '',
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: anonKey,
+      debug: kDebugMode,
     );
-    const supabaseAnonKey = String.fromEnvironment(
-      'SUPABASE_ANON_KEY',
-      defaultValue: '',
-    );
-    
-    if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseAnonKey,
-      );
-      _isInitialized = true;
-      debugPrint('Supabase initialized manually');
-    } else {
-      debugPrint('Warning: Supabase credentials not found. Please connect via Supabase panel in Dreamflow.');
-    }
   }
-  
+
   static SupabaseClient get client => Supabase.instance.client;
+  static GoTrueClient get auth => client.auth;
 }
 
-/// Generic CRUD Operations Service for Supabase
+/// Generic database service for CRUD operations
 class SupabaseService {
-  SupabaseClient get _client => SupabaseConfig.client;
-
-  /// Create a new record
-  Future<Map<String, dynamic>?> create({
-    required String table,
-    required Map<String, dynamic> data,
-  }) async {
-    try {
-      final response = await _client.from(table).insert(data).select().single();
-      return response;
-    } catch (e) {
-      debugPrint('Error creating record in $table: $e');
-      rethrow;
-    }
-  }
-
-  /// Read records with optional filters
-  Future<List<Map<String, dynamic>>> read({
-    required String table,
-    String? column,
-    dynamic value,
-    String? orderBy,
-    bool ascending = true,
-    int? limit,
-  }) async {
-    try {
-      dynamic query = _client.from(table).select();
-      
-      if (column != null && value != null) {
-        query = query.eq(column, value);
-      }
-      
-      if (orderBy != null) {
-        query = query.order(orderBy, ascending: ascending);
-      }
-      
-      if (limit != null) {
-        query = query.limit(limit);
-      }
-      
-      final response = await query as List<dynamic>;
-      return response.cast<Map<String, dynamic>>();
-    } catch (e) {
-      debugPrint('Error reading from $table: $e');
-      rethrow;
-    }
-  }
-
-  /// Read a single record by ID
-  Future<Map<String, dynamic>?> readById({
-    required String table,
-    required String id,
-  }) async {
-    try {
-      final response = await _client.from(table).select().eq('id', id).single();
-      return response;
-    } catch (e) {
-      debugPrint('Error reading record from $table: $e');
-      rethrow;
-    }
-  }
-
-  /// Update a record
-  Future<Map<String, dynamic>?> update({
-    required String table,
-    required String id,
-    required Map<String, dynamic> data,
-  }) async {
-    try {
-      final response = await _client.from(table).update(data).eq('id', id).select().single();
-      return response;
-    } catch (e) {
-      debugPrint('Error updating record in $table: $e');
-      rethrow;
-    }
-  }
-
-  /// Delete a record
-  Future<void> delete({
-    required String table,
-    required String id,
-  }) async {
-    try {
-      await _client.from(table).delete().eq('id', id);
-    } catch (e) {
-      debugPrint('Error deleting record from $table: $e');
-      rethrow;
-    }
-  }
-
-  /// Stream records with optional filters
-  Stream<List<Map<String, dynamic>>> stream({
-    required String table,
-    String? column,
-    dynamic value,
-  }) {
-    try {
-      return _client.from(table).stream(primaryKey: ['id']).map((data) {
-        if (column != null && value != null) {
-          return data.where((item) => item[column] == value).toList();
-        }
-        return data;
-      });
-    } catch (e) {
-      debugPrint('Error streaming from $table: $e');
-      rethrow;
-    }
-  }
-
-  /// Custom query execution
-  Future<List<Map<String, dynamic>>> query({
-    required String table,
+  /// Select multiple records from a table
+  static Future<List<Map<String, dynamic>>> select(
+    String table, {
     String? select,
     Map<String, dynamic>? filters,
     String? orderBy,
@@ -169,27 +31,125 @@ class SupabaseService {
     int? limit,
   }) async {
     try {
-      dynamic query = _client.from(table).select(select ?? '*');
-      
+      dynamic query = SupabaseConfig.client.from(table).select(select ?? '*');
+
+      // Apply filters
       if (filters != null) {
-        filters.forEach((key, value) {
-          query = query.eq(key, value);
-        });
+        for (final entry in filters.entries) {
+          query = query.eq(entry.key, entry.value);
+        }
       }
-      
+
+      // Apply ordering
       if (orderBy != null) {
         query = query.order(orderBy, ascending: ascending);
       }
-      
+
+      // Apply limit
       if (limit != null) {
         query = query.limit(limit);
       }
-      
-      final response = await query as List<dynamic>;
-      return response.cast<Map<String, dynamic>>();
+
+      return await query;
     } catch (e) {
-      debugPrint('Error executing query on $table: $e');
-      rethrow;
+      throw _handleDatabaseError('select', table, e);
+    }
+  }
+
+  /// Select a single record from a table
+  static Future<Map<String, dynamic>?> selectSingle(
+    String table, {
+    String? select,
+    required Map<String, dynamic> filters,
+  }) async {
+    try {
+      dynamic query = SupabaseConfig.client.from(table).select(select ?? '*');
+
+      for (final entry in filters.entries) {
+        query = query.eq(entry.key, entry.value);
+      }
+
+      return await query.maybeSingle();
+    } catch (e) {
+      throw _handleDatabaseError('selectSingle', table, e);
+    }
+  }
+
+  /// Insert a record into a table
+  static Future<List<Map<String, dynamic>>> insert(
+    String table,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      return await SupabaseConfig.client.from(table).insert(data).select();
+    } catch (e) {
+      throw _handleDatabaseError('insert', table, e);
+    }
+  }
+
+  /// Insert multiple records into a table
+  static Future<List<Map<String, dynamic>>> insertMultiple(
+    String table,
+    List<Map<String, dynamic>> data,
+  ) async {
+    try {
+      return await SupabaseConfig.client.from(table).insert(data).select();
+    } catch (e) {
+      throw _handleDatabaseError('insertMultiple', table, e);
+    }
+  }
+
+  /// Update records in a table
+  static Future<List<Map<String, dynamic>>> update(
+    String table,
+    Map<String, dynamic> data, {
+    required Map<String, dynamic> filters,
+  }) async {
+    try {
+      dynamic query = SupabaseConfig.client.from(table).update(data);
+
+      for (final entry in filters.entries) {
+        query = query.eq(entry.key, entry.value);
+      }
+
+      return await query.select();
+    } catch (e) {
+      throw _handleDatabaseError('update', table, e);
+    }
+  }
+
+  /// Delete records from a table
+  static Future<void> delete(
+    String table, {
+    required Map<String, dynamic> filters,
+  }) async {
+    try {
+      dynamic query = SupabaseConfig.client.from(table).delete();
+
+      for (final entry in filters.entries) {
+        query = query.eq(entry.key, entry.value);
+      }
+
+      await query;
+    } catch (e) {
+      throw _handleDatabaseError('delete', table, e);
+    }
+  }
+
+  /// Get direct table reference for complex queries
+  static SupabaseQueryBuilder from(String table) =>
+      SupabaseConfig.client.from(table);
+
+  /// Handle database errors
+  static String _handleDatabaseError(
+    String operation,
+    String table,
+    dynamic error,
+  ) {
+    if (error is PostgrestException) {
+      return 'Failed to $operation from $table: ${error.message}';
+    } else {
+      return 'Failed to $operation from $table: ${error.toString()}';
     }
   }
 }
