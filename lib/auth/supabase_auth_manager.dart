@@ -1,10 +1,12 @@
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:park_my_whip_residents/auth/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/helpers/shared_pref_helper.dart';
 import 'package:park_my_whip_residents/src/core/models/user_model.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 class SupabaseAuthManager extends AuthManager with EmailSignInManager {
   final SharedPrefHelper _sharedPrefHelper;
@@ -71,46 +73,93 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     String password,
   ) async {
     try {
-      final response = await SupabaseConfig.auth.signUp(
+      debugPrint('🔵 [SIGNUP] Creating account for email');
+
+      // Step 1: Create account in Supabase (without email confirmation)
+      final signUpResponse = await SupabaseConfig.auth.signUp(
         email: email,
         password: password,
+        data: {'full_name': email.split('@')[0]},
+        emailRedirectTo: null, // Disable automatic email sending
       );
 
-      if (response.user == null) {
-        log('Sign up failed: No user returned', name: 'SupabaseAuthManager');
-        throw Exception('Sign up failed. Please try again.');
+      debugPrint('🔵 [SIGNUP] SignUp response: user=${signUpResponse.user?.id}, session=${signUpResponse.session?.accessToken != null}');
+
+      if (signUpResponse.user == null) {
+        debugPrint('🔴 [SIGNUP ERROR] No user returned from Supabase');
+        throw Exception('Account creation failed. No user returned from Supabase.');
       }
 
-      log('Sign up successful for: $email', name: 'SupabaseAuthManager');
+      debugPrint('✅ [SIGNUP] Account created successfully. User ID: ${signUpResponse.user!.id}');
 
-      // Create user record in database
+      // Step 2: Create user profile in database
       try {
-        await _createUserRecord(
-          response.user!.id,
-          response.user!.email ?? email,
+        debugPrint('🔵 [SIGNUP] Creating user profile in database...');
+        await SupabaseConfig.client.from('users').insert({
+          'id': signUpResponse.user!.id,
+          'email': email,
+          'full_name': email.split('@')[0],
+          'role': 'user',
+          'is_active': true,
+          'metadata': {},
+        });
+        debugPrint('✅ [SIGNUP] User profile created in database');
+      } catch (dbError) {
+        debugPrint('🔴 [SIGNUP ERROR] Database insert error: $dbError');
+        if (dbError is PostgrestException) {
+          debugPrint('🔴 [SIGNUP ERROR] Postgrest error - Code: ${dbError.code}, Message: ${dbError.message}');
+          // If RLS policy error, show helpful message
+          if (dbError.code == '42501' || dbError.message?.contains('policy') == true) {
+            throw Exception('Database permission error. Please check your Supabase RLS policies for the users table.');
+          }
+        }
+        throw Exception('Failed to create user profile: $dbError');
+      }
+
+      // Step 3: Send verification email with deep link
+      try {
+        debugPrint('🔵 [SIGNUP] Sending verification email...');
+        await SupabaseConfig.auth.signInWithOtp(
+          email: email,
+          emailRedirectTo: 'parkmywhip-resident://verify-email',
         );
-        log('User record created in database', name: 'SupabaseAuthManager');
-      } catch (e) {
-        log('Warning: Could not create user record: $e',
-            name: 'SupabaseAuthManager');
+        debugPrint('✅ [SIGNUP] Verification email sent successfully');
+      } catch (emailError) {
+        debugPrint('⚠️ [SIGNUP WARNING] Failed to send verification email: $emailError');
+        // Don't fail the signup if email sending fails
+        // User can resend the email later
       }
 
-      // Fetch user profile
-      final user = await _getUserProfile(response.user!.id);
-      if (user != null) {
-        await _cacheUser(user);
-        return user;
-      }
-
-      // Fallback: return basic user from auth response
-      return _userFromAuthUser(response.user!);
+      // Return basic user from auth response
+      return _userFromAuthUser(signUpResponse.user!);
     } on sb.AuthException catch (e) {
-      log('Auth error during sign up: ${e.message}',
-          name: 'SupabaseAuthManager');
-      throw Exception(_handleAuthError(e));
+      debugPrint('🔴 [SIGNUP ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}');
+      rethrow; // Let NetworkExceptions handle it
+    } on PostgrestException catch (e) {
+      debugPrint('🔴 [SIGNUP ERROR] Database error - Code: ${e.code}, Message: ${e.message}');
+      rethrow; // Let NetworkExceptions handle it
     } catch (e) {
-      log('Error during sign up: $e', name: 'SupabaseAuthManager');
-      throw Exception('An unexpected error occurred. Please try again.');
+      debugPrint('🔴 [SIGNUP ERROR] Unexpected error: $e');
+      rethrow; // Let NetworkExceptions handle it
+    }
+  }
+
+  @override
+  Future<void> resendVerificationEmail({required String email}) async {
+    try {
+      debugPrint('🔵 [RESEND] Resending verification email to: $email');
+      // Use signInWithOtp to send verification link
+      await SupabaseConfig.auth.signInWithOtp(
+        email: email,
+        emailRedirectTo: 'parkmywhip-resident://verify-email',
+      );
+      debugPrint('✅ [RESEND] Verification email resent successfully');
+    } on sb.AuthException catch (e) {
+      debugPrint('🔴 [RESEND ERROR] Auth error: ${e.message}');
+      rethrow; // Let NetworkExceptions handle it
+    } catch (e) {
+      debugPrint('🔴 [RESEND ERROR] Unexpected error: $e');
+      rethrow; // Let NetworkExceptions handle it
     }
   }
 
@@ -183,17 +232,53 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     required BuildContext context,
   }) async {
     try {
+      debugPrint('🔵 [RESET PASSWORD] Request for: $email');
+
+      // Step 1: Check if user exists in the database
+      final users = await SupabaseService.select(
+        'users',
+        select: 'id',
+        filters: {'email': email},
+        limit: 1,
+      );
+
+      if (users.isEmpty) {
+        debugPrint('🔴 [RESET PASSWORD ERROR] Email not found in users table');
+        throw Exception('No account found with this email address.');
+      }
+
+      // Step 2: Send password reset email
       await SupabaseConfig.auth.resetPasswordForEmail(
         email,
         redirectTo: 'parkmywhip-resident://reset-password',
       );
-      log('Password reset email sent to: $email', name: 'SupabaseAuthManager');
+      
+      debugPrint('✅ [RESET PASSWORD] Email sent successfully to: $email');
+      
     } on sb.AuthException catch (e) {
-      log('Auth error during password reset: ${e.message}',
-          name: 'SupabaseAuthManager');
+      debugPrint('🔴 [RESET PASSWORD ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}');
+      
+      // Handle rate limiting explicitly - check both message and status code
+      final errorMessage = e.message.toLowerCase();
+      if (errorMessage.contains('too many') || 
+          errorMessage.contains('rate limit') ||
+          errorMessage.contains('email rate limit exceeded') ||
+          e.statusCode == '429') {
+        throw Exception('Too many password reset attempts. Please wait a few minutes before trying again.');
+      }
+      
+      // Handle other auth errors
       throw Exception(_handleAuthError(e));
     } catch (e) {
-      log('Error sending password reset: $e', name: 'SupabaseAuthManager');
+      debugPrint('🔴 [RESET PASSWORD ERROR] Unexpected error: $e');
+      
+      // Re-throw custom exceptions without wrapping
+      final errorString = e.toString();
+      if (errorString.contains('No account found') ||
+          errorString.contains('Too many password reset attempts')) {
+        rethrow;
+      }
+      
       throw Exception('Failed to send password reset email. Please try again.');
     }
   }

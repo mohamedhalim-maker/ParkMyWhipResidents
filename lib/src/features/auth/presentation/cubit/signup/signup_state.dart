@@ -8,13 +8,15 @@ class SignupState extends Equatable {
   final bool isEmailButtonEnabled;
   final String? signupEmail;
 
-  // Email verification
+  // Email verification timer
   final bool canResendEmail;
   final int resendCountdownSeconds;
+  final bool isTimerRunning;
 
   // Set password step
   final String? passwordError;
   final String? confirmPasswordError;
+  final String? generalError;
   final bool isPasswordButtonEnabled;
   final int passwordFieldTrigger;
 
@@ -23,10 +25,12 @@ class SignupState extends Equatable {
     this.emailError,
     this.isEmailButtonEnabled = false,
     this.signupEmail,
-    this.canResendEmail = true,
-    this.resendCountdownSeconds = 0,
+    this.canResendEmail = false,
+    this.resendCountdownSeconds = 60,
+    this.isTimerRunning = false,
     this.passwordError,
     this.confirmPasswordError,
+    this.generalError,
     this.isPasswordButtonEnabled = false,
     this.passwordFieldTrigger = 0,
   });
@@ -38,8 +42,10 @@ class SignupState extends Equatable {
     String? signupEmail,
     bool? canResendEmail,
     int? resendCountdownSeconds,
+    bool? isTimerRunning,
     String? passwordError,
     String? confirmPasswordError,
+    String? generalError,
     bool? isPasswordButtonEnabled,
     int? passwordFieldTrigger,
   }) =>
@@ -51,8 +57,10 @@ class SignupState extends Equatable {
         canResendEmail: canResendEmail ?? this.canResendEmail,
         resendCountdownSeconds:
             resendCountdownSeconds ?? this.resendCountdownSeconds,
+        isTimerRunning: isTimerRunning ?? this.isTimerRunning,
         passwordError: passwordError,
         confirmPasswordError: confirmPasswordError,
+        generalError: generalError,
         isPasswordButtonEnabled:
             isPasswordButtonEnabled ?? this.isPasswordButtonEnabled,
         passwordFieldTrigger: passwordFieldTrigger ?? this.passwordFieldTrigger,
@@ -66,8 +74,10 @@ class SignupState extends Equatable {
         signupEmail,
         canResendEmail,
         resendCountdownSeconds,
+        isTimerRunning,
         passwordError,
         confirmPasswordError,
+        generalError,
         isPasswordButtonEnabled,
         passwordFieldTrigger,
       ];

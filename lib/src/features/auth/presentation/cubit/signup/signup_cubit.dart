@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:park_my_whip_residents/auth/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/signup/signup_state.dart';
@@ -9,9 +10,11 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/sign
 class SignupCubit extends Cubit<SignupState> {
   SignupCubit({
     required this.validators,
+    required this.authManager,
   }) : super(const SignupState());
 
   final Validators validators;
+  final AuthManager authManager;
 
   // Signup email controllers
   final TextEditingController emailController = TextEditingController();
@@ -53,18 +56,20 @@ class SignupCubit extends Cubit<SignupState> {
 
     log('Signup email saved: ${state.signupEmail}', name: 'SignupCubit');
 
-    // Navigate to verify email page
+    // Navigate to set password page
     if (context.mounted) {
-      Navigator.of(context).pushNamed(RoutesName.verifyEmail);
-      // Start countdown timer for resend
-      _startResendCountdown();
+      Navigator.of(context).pushNamed(RoutesName.setPassword);
     }
   }
 
   // Start countdown timer for resend verification email
-  void _startResendCountdown() {
+  void startResendCountdown() {
     _resendTimer?.cancel();
-    emit(state.copyWith(canResendEmail: false, resendCountdownSeconds: 60));
+    emit(state.copyWith(
+      canResendEmail: false,
+      resendCountdownSeconds: 60,
+      isTimerRunning: true,
+    ));
 
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (state.resendCountdownSeconds > 1) {
@@ -72,7 +77,11 @@ class SignupCubit extends Cubit<SignupState> {
             resendCountdownSeconds: state.resendCountdownSeconds - 1));
       } else {
         timer.cancel();
-        emit(state.copyWith(canResendEmail: true, resendCountdownSeconds: 0));
+        emit(state.copyWith(
+          canResendEmail: true,
+          resendCountdownSeconds: 0,
+          isTimerRunning: false,
+        ));
       }
     });
   }
@@ -91,16 +100,18 @@ class SignupCubit extends Cubit<SignupState> {
     try {
       emit(state.copyWith(isLoading: true, emailError: null));
 
-      // TODO: Implement actual email sending logic here
-      // await authManager.sendVerificationEmail(email: state.signupEmail!);
-
-      log('Verification email resent to ${state.signupEmail}',
+      log('Resending verification email to ${state.signupEmail}',
           name: 'SignupCubit');
+
+      await (authManager as EmailSignInManager)
+          .resendVerificationEmail(email: state.signupEmail!);
+
+      log('Verification email resent successfully', name: 'SignupCubit');
 
       emit(state.copyWith(isLoading: false));
 
       // Restart countdown
-      _startResendCountdown();
+      startResendCountdown();
     } catch (e) {
       log('Resend verification error: $e', name: 'SignupCubit', level: 900);
       final errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -134,6 +145,7 @@ class SignupCubit extends Cubit<SignupState> {
     emit(state.copyWith(
       passwordError: null,
       confirmPasswordError: null,
+      generalError: null,
       passwordFieldTrigger: state.passwordFieldTrigger + 1,
     ));
     _validatePasswordForm();
@@ -163,10 +175,37 @@ class SignupCubit extends Cubit<SignupState> {
       return;
     }
 
-    log('Password is valid and ready to send with email: ${state.signupEmail}',
-        name: 'SignupCubit');
+    // Call auth manager to create account and send verification email
+    try {
+      emit(state.copyWith(isLoading: true, generalError: null));
 
-    // TODO: Send registration request with email and password
+      log('Creating account for: ${state.signupEmail}', name: 'SignupCubit');
+
+      await (authManager as EmailSignInManager).createAccountWithEmail(
+        context,
+        state.signupEmail!,
+        passwordController.text.trim(),
+      );
+
+      log('Account created successfully. Verification email sent.',
+          name: 'SignupCubit');
+
+      emit(state.copyWith(isLoading: false));
+
+      // Navigate to verify email page
+      if (context.mounted) {
+        Navigator.of(context).pushNamed(RoutesName.verifyEmail);
+      }
+    } catch (e) {
+      log('Error creating account: $e', name: 'SignupCubit', level: 900);
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(
+        isLoading: false,
+        generalError: errorMessage.isEmpty
+            ? 'Failed to create account. Please try again.'
+            : errorMessage,
+      ));
+    }
   }
 
   @override

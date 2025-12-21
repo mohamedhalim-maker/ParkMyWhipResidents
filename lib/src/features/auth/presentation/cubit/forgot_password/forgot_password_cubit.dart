@@ -61,24 +61,39 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
         email: emailController.text.trim(),
         context: context,
       );
-      log('Password reset email sent', name: 'ForgotPasswordCubit');
-      emit(state.copyWith(isLoading: false));
+      log('✅ Password reset email sent successfully', name: 'ForgotPasswordCubit');
+      
+      // Only proceed if there was no error
+      emit(state.copyWith(isLoading: false, emailError: null));
 
       // Start countdown timer
       _startResendCountdown();
 
-      // Navigate to success page
+      // Navigate to success page only if context is still valid
       if (context.mounted) {
         Navigator.of(context).pushReplacementNamed(RoutesName.resetLinkSent);
       }
     } catch (e) {
-      log('Forgot password error: $e', name: 'ForgotPasswordCubit', level: 900);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      log('🔴 Forgot password error: $e', name: 'ForgotPasswordCubit', level: 900);
+      
+      // Extract clean error message
+      String errorMessage = e.toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('Error: ', '');
+      
+      // Ensure we don't show empty error
+      if (errorMessage.isEmpty || errorMessage == 'null') {
+        errorMessage = 'Failed to send reset link. Please try again.';
+      }
+      
+      log('🔴 Displaying error to user: $errorMessage', name: 'ForgotPasswordCubit', level: 900);
+      
       emit(state.copyWith(
         isLoading: false,
-        emailError:
-            errorMessage.isEmpty ? 'Failed to send reset link' : errorMessage,
+        emailError: errorMessage,
       ));
+      
+      // DO NOT navigate when there's an error
     }
   }
 

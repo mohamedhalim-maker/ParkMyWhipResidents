@@ -36,6 +36,8 @@ mixin EmailSignInManager on AuthManager {
     String email,
     String password,
   );
+
+  Future<void> resendVerificationEmail({required String email});
 }
 
 // Anonymous authentication for guest users

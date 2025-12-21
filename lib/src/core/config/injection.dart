@@ -32,6 +32,7 @@ void setupDependencyInjection() {
   getIt.registerLazySingleton<SignupCubit>(
     () => SignupCubit(
       validators: getIt<Validators>(),
+      authManager: getIt<AuthManager>(),
     ),
   );
 

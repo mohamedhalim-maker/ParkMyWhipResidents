@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:park_my_whip_residents/src/core/config/injection.dart';
+import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
@@ -28,6 +29,8 @@ class SetPasswordPage extends StatelessWidget {
             buildWhen: (previous, current) =>
                 previous.passwordError != current.passwordError ||
                 previous.confirmPasswordError != current.confirmPasswordError ||
+                previous.generalError != current.generalError ||
+                previous.isLoading != current.isLoading ||
                 previous.isPasswordButtonEnabled !=
                     current.isPasswordButtonEnabled ||
                 previous.passwordFieldTrigger != current.passwordFieldTrigger,
@@ -62,6 +65,30 @@ class SetPasswordPage extends StatelessWidget {
                     onChanged: (_) => cubit.onPasswordFieldChanged(),
                     isPassword: true,
                   ),
+                  if (state.generalError != null) ...[
+                    verticalSpace(16),
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red, size: 20.sp),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              state.generalError!,
+                              style: AppTextStyles.urbanistFont14Gray800Regular1_4
+                                  .copyWith(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   verticalSpace(24),
                   PasswordValidationRules(
                     password: cubit.passwordController.text,
@@ -71,7 +98,7 @@ class SetPasswordPage extends StatelessWidget {
                     text: AuthStrings.continueText,
                     onPressed: () =>
                         cubit.validatePasswordForm(context: context),
-                    isEnabled: state.isPasswordButtonEnabled,
+                    isEnabled: state.isPasswordButtonEnabled && !state.isLoading,
                   ),
                   verticalSpace(16),
                 ],
