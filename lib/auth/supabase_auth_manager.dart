@@ -83,14 +83,17 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         emailRedirectTo: null, // Disable automatic email sending
       );
 
-      debugPrint('🔵 [SIGNUP] SignUp response: user=${signUpResponse.user?.id}, session=${signUpResponse.session?.accessToken != null}');
+      debugPrint(
+          '🔵 [SIGNUP] SignUp response: user=${signUpResponse.user?.id}, session=${signUpResponse.session?.accessToken != null}');
 
       if (signUpResponse.user == null) {
         debugPrint('🔴 [SIGNUP ERROR] No user returned from Supabase');
-        throw Exception('Account creation failed. No user returned from Supabase.');
+        throw Exception(
+            'Account creation failed. No user returned from Supabase.');
       }
 
-      debugPrint('✅ [SIGNUP] Account created successfully. User ID: ${signUpResponse.user!.id}');
+      debugPrint(
+          '✅ [SIGNUP] Account created successfully. User ID: ${signUpResponse.user!.id}');
 
       // Step 2: Create user profile in database
       try {
@@ -107,10 +110,13 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       } catch (dbError) {
         debugPrint('🔴 [SIGNUP ERROR] Database insert error: $dbError');
         if (dbError is PostgrestException) {
-          debugPrint('🔴 [SIGNUP ERROR] Postgrest error - Code: ${dbError.code}, Message: ${dbError.message}');
+          debugPrint(
+              '🔴 [SIGNUP ERROR] Postgrest error - Code: ${dbError.code}, Message: ${dbError.message}');
           // If RLS policy error, show helpful message
-          if (dbError.code == '42501' || dbError.message?.contains('policy') == true) {
-            throw Exception('Database permission error. Please check your Supabase RLS policies for the users table.');
+          if (dbError.code == '42501' ||
+              dbError.message?.contains('policy') == true) {
+            throw Exception(
+                'Database permission error. Please check your Supabase RLS policies for the users table.');
           }
         }
         throw Exception('Failed to create user profile: $dbError');
@@ -125,7 +131,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         );
         debugPrint('✅ [SIGNUP] Verification email sent successfully');
       } catch (emailError) {
-        debugPrint('⚠️ [SIGNUP WARNING] Failed to send verification email: $emailError');
+        debugPrint(
+            '⚠️ [SIGNUP WARNING] Failed to send verification email: $emailError');
         // Don't fail the signup if email sending fails
         // User can resend the email later
       }
@@ -133,10 +140,12 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       // Return basic user from auth response
       return _userFromAuthUser(signUpResponse.user!);
     } on sb.AuthException catch (e) {
-      debugPrint('🔴 [SIGNUP ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}');
+      debugPrint(
+          '🔴 [SIGNUP ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}');
       rethrow; // Let NetworkExceptions handle it
     } on PostgrestException catch (e) {
-      debugPrint('🔴 [SIGNUP ERROR] Database error - Code: ${e.code}, Message: ${e.message}');
+      debugPrint(
+          '🔴 [SIGNUP ERROR] Database error - Code: ${e.code}, Message: ${e.message}');
       rethrow; // Let NetworkExceptions handle it
     } catch (e) {
       debugPrint('🔴 [SIGNUP ERROR] Unexpected error: $e');
@@ -232,53 +241,45 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     required BuildContext context,
   }) async {
     try {
-      debugPrint('🔵 [RESET PASSWORD] Request for: $email');
+      log('🔵 [RESET PASSWORD] Request for: $email',
+          name: 'SupabaseAuthManager', level: 800);
 
-      // Step 1: Check if user exists in the database
-      final users = await SupabaseService.select(
-        'users',
-        select: 'id',
-        filters: {'email': email},
-        limit: 1,
-      );
-
-      if (users.isEmpty) {
-        debugPrint('🔴 [RESET PASSWORD ERROR] Email not found in users table');
-        throw Exception('No account found with this email address.');
-      }
-
-      // Step 2: Send password reset email
+      // Send password reset email
+      // Supabase will handle checking if the email exists
       await SupabaseConfig.auth.resetPasswordForEmail(
         email,
         redirectTo: 'parkmywhip-resident://reset-password',
       );
-      
-      debugPrint('✅ [RESET PASSWORD] Email sent successfully to: $email');
-      
+
+      log('✅ [RESET PASSWORD] Email sent successfully to: $email',
+          name: 'SupabaseAuthManager', level: 1000);
     } on sb.AuthException catch (e) {
-      debugPrint('🔴 [RESET PASSWORD ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}');
-      
+      log('🔴 [RESET PASSWORD ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}',
+          name: 'SupabaseAuthManager', level: 900);
+
       // Handle rate limiting explicitly - check both message and status code
       final errorMessage = e.message.toLowerCase();
-      if (errorMessage.contains('too many') || 
+      if (errorMessage.contains('too many') ||
           errorMessage.contains('rate limit') ||
           errorMessage.contains('email rate limit exceeded') ||
           e.statusCode == '429') {
-        throw Exception('Too many password reset attempts. Please wait a few minutes before trying again.');
+        throw Exception(
+            'Too many password reset attempts. Please wait a few minutes before trying again.');
       }
-      
+
       // Handle other auth errors
       throw Exception(_handleAuthError(e));
     } catch (e) {
-      debugPrint('🔴 [RESET PASSWORD ERROR] Unexpected error: $e');
-      
+      log('🔴 [RESET PASSWORD ERROR] Unexpected error: $e',
+          name: 'SupabaseAuthManager', level: 900);
+
       // Re-throw custom exceptions without wrapping
       final errorString = e.toString();
       if (errorString.contains('No account found') ||
           errorString.contains('Too many password reset attempts')) {
         rethrow;
       }
-      
+
       throw Exception('Failed to send password reset email. Please try again.');
     }
   }
