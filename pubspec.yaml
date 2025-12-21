@@ -48,6 +48,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+  fonts:
+   - family: appIcons
+     fonts:
+      - asset: assets/fonts/app_icons_font.ttf
 
 flutter_launcher_icons:
   android: true
