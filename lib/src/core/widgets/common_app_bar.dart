@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:park_my_whip_residents/src/core/constants/app_icons.dart';
 import 'package:park_my_whip_residents/src/core/constants/colors.dart';
-import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -21,7 +21,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onBackPress ??
                 () => Navigator.pop(context), //go back to previous page
             icon: Icon(
-              Icons.back_hand,
+              AppIcons.backIcon,
               size: 18,
               color: AppColor.grey700,
             ),
