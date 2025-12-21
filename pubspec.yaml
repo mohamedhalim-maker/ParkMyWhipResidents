@@ -20,7 +20,7 @@ dependencies:
   
   # UI & Fonts
   flutter_screenutil: ^5.9.3
-  google_fonts: ^6.1.0
+  google_fonts: ^6.3.0
   
   # Local Storage
   shared_preferences: ^2.0.0

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:park_my_whip_residents/src/core/constants/colors.dart';
-import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_app_bar.dart';
 
@@ -11,9 +10,7 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CommonAppBar(
-       
-      ),
+      appBar: CommonAppBar(),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(24.w),
         child: Column(

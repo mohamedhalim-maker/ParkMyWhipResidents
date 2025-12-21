@@ -1,9 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:park_my_whip_residents/src/core/config/injection.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
-import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:park_my_whip_residents/src/core/routes/names.dart';
 
 class DontHaveAccountText extends StatelessWidget {
   const DontHaveAccountText({super.key});
@@ -21,8 +20,8 @@ class DontHaveAccountText extends StatelessWidget {
               text: AuthStrings.signUp,
               style: AppTextStyles.urbanistFont15Grey700SemiBold1_33,
               recognizer: TapGestureRecognizer()
-                // ..onTap = () =>
-                //     getIt<AuthCubit>().navigateToSignUpPage(context: context),
+                ..onTap =
+                    () => Navigator.of(context).pushNamed(RoutesName.signup),
             ),
           ],
         ),

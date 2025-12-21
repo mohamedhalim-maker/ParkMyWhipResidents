@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
-import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 
 /// Reusable error dialog that follows the app's design system
 /// Used for displaying backend errors when there's no UI space for inline error messages

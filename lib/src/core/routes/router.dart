@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:park_my_whip_residents/src/core/config/injection.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
-import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_cubit.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/signup/signup_cubit.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_cubit.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/login_page.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/pages/signup_pages/signup_page.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/pages/signup_pages/verify_email_page.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/pages/signup_pages/set_password_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/forgot_password_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/reset_link_sent_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/reset_link_error_page.dart';
@@ -32,8 +37,32 @@ class AppRouter {
       case RoutesName.login:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<AuthCubit>(),
+            value: getIt<LoginCubit>(),
             child: const LoginPage(),
+          ),
+        );
+
+      case RoutesName.signup:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<SignupCubit>(),
+            child: const SignupPage(),
+          ),
+        );
+
+      case RoutesName.verifyEmail:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<SignupCubit>(),
+            child: const VerifyEmailPage(),
+          ),
+        );
+
+      case RoutesName.setPassword:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<SignupCubit>(),
+            child: const SetPasswordPage(),
           ),
         );
 
@@ -45,7 +74,7 @@ class AppRouter {
       case RoutesName.forgotPassword:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<AuthCubit>(),
+            value: getIt<ForgotPasswordCubit>(),
             child: const ForgotPasswordPage(),
           ),
         );
@@ -53,7 +82,7 @@ class AppRouter {
       case RoutesName.resetLinkSent:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<AuthCubit>(),
+            value: getIt<ForgotPasswordCubit>(),
             child: const ResetLinkSentPage(),
           ),
         );
@@ -66,7 +95,7 @@ class AppRouter {
       case RoutesName.resetPassword:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<AuthCubit>(),
+            value: getIt<ForgotPasswordCubit>(),
             child: const ResetPasswordPage(),
           ),
         );
@@ -74,7 +103,7 @@ class AppRouter {
       case RoutesName.passwordResetSuccess:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<AuthCubit>(),
+            value: getIt<ForgotPasswordCubit>(),
             child: const PasswordResetSuccessPage(),
           ),
         );
@@ -84,7 +113,7 @@ class AppRouter {
           builder: (_) => Scaffold(
             body: Center(
               child: Padding(
-                padding:  EdgeInsets.symmetric(vertical: 20,horizontal: 20),
+                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                 child: Text('No route defined for ${settings.name}'),
               ),
             ),

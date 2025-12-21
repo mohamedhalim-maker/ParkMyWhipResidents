@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:park_my_whip_residents/src/core/config/injection.dart';
 import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
-import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class OtpWidget extends StatelessWidget {
@@ -14,7 +12,7 @@ class OtpWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasError = errorMessage != null && errorMessage!.isNotEmpty;
-    
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 17.w),
       child: Column(
@@ -42,7 +40,7 @@ class OtpWidget extends StatelessWidget {
             ),
             animationDuration: Duration(milliseconds: 300),
             enableActiveFill: true,
-            controller:TextEditingController(),
+            controller: TextEditingController(),
             onChanged: (value) {
               onChanged(value);
             },

@@ -38,7 +38,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       }
 
       // If user doesn't exist in database, create it
-      log('User profile not found, creating new record', name: 'SupabaseAuthManager');
+      log('User profile not found, creating new record',
+          name: 'SupabaseAuthManager');
       await _createUserRecord(
         response.user!.id,
         response.user!.email ?? email,
@@ -54,7 +55,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       // Fallback: return basic user from auth response
       return _userFromAuthUser(response.user!);
     } on sb.AuthException catch (e) {
-      log('Auth error during sign in: ${e.message}', name: 'SupabaseAuthManager');
+      log('Auth error during sign in: ${e.message}',
+          name: 'SupabaseAuthManager');
       throw Exception(_handleAuthError(e));
     } catch (e) {
       log('Error during sign in: $e', name: 'SupabaseAuthManager');
@@ -89,7 +91,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         );
         log('User record created in database', name: 'SupabaseAuthManager');
       } catch (e) {
-        log('Warning: Could not create user record: $e', name: 'SupabaseAuthManager');
+        log('Warning: Could not create user record: $e',
+            name: 'SupabaseAuthManager');
       }
 
       // Fetch user profile
@@ -102,7 +105,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       // Fallback: return basic user from auth response
       return _userFromAuthUser(response.user!);
     } on sb.AuthException catch (e) {
-      log('Auth error during sign up: ${e.message}', name: 'SupabaseAuthManager');
+      log('Auth error during sign up: ${e.message}',
+          name: 'SupabaseAuthManager');
       throw Exception(_handleAuthError(e));
     } catch (e) {
       log('Error during sign up: $e', name: 'SupabaseAuthManager');
@@ -164,7 +168,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       log('Email updated successfully', name: 'SupabaseAuthManager');
     } on sb.AuthException catch (e) {
-      log('Auth error updating email: ${e.message}', name: 'SupabaseAuthManager');
+      log('Auth error updating email: ${e.message}',
+          name: 'SupabaseAuthManager');
       throw Exception(_handleAuthError(e));
     } catch (e) {
       log('Error updating email: $e', name: 'SupabaseAuthManager');
@@ -184,7 +189,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       );
       log('Password reset email sent to: $email', name: 'SupabaseAuthManager');
     } on sb.AuthException catch (e) {
-      log('Auth error during password reset: ${e.message}', name: 'SupabaseAuthManager');
+      log('Auth error during password reset: ${e.message}',
+          name: 'SupabaseAuthManager');
       throw Exception(_handleAuthError(e));
     } catch (e) {
       log('Error sending password reset: $e', name: 'SupabaseAuthManager');
@@ -202,10 +208,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       await SupabaseConfig.auth.updateUser(
         sb.UserAttributes(password: newPassword),
       );
-      
+
       log('Password updated successfully', name: 'SupabaseAuthManager');
     } on sb.AuthException catch (e) {
-      log('Auth error updating password: ${e.message}', name: 'SupabaseAuthManager');
+      log('Auth error updating password: ${e.message}',
+          name: 'SupabaseAuthManager');
       throw Exception(_handleAuthError(e));
     } catch (e) {
       log('Error updating password: $e', name: 'SupabaseAuthManager');
@@ -263,9 +270,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         role: 'user',
         isActive: true,
         metadata: {},
-        createdAt: authUser.createdAt != null
-            ? DateTime.parse(authUser.createdAt!)
-            : DateTime.now(),
+        createdAt: DateTime.parse(authUser.createdAt),
         updatedAt: DateTime.now(),
       );
 

@@ -8,21 +8,18 @@ class AlreadyHaveAccountText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.center,
-      child: RichText(
-        text: TextSpan(
-          text: AuthStrings.alreadyHaveAccount,
-          style: AppTextStyles.urbanistFont15Grey700Regular1_33,
-          children: [
-            TextSpan(
-              text: AuthStrings.signIn,
-              style: AppTextStyles.urbanistFont15Grey700SemiBold1_33,
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => Navigator.pop(context),
-            ),
-          ],
-        ),
+    return RichText(
+      text: TextSpan(
+        text: AuthStrings.alreadyHaveAccount,
+        style: AppTextStyles.urbanistFont15Grey700Regular1_33,
+        children: [
+          TextSpan(
+            text: AuthStrings.logIn,
+            style: AppTextStyles.urbanistFont16RichRedSemiBold1_2,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () => Navigator.pop(context),
+          ),
+        ],
       ),
     );
   }

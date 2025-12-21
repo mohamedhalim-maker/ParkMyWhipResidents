@@ -6,8 +6,8 @@ import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 import 'package:park_my_whip_residents/src/core/widgets/custom_text_field.dart';
-import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_state.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_cubit.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_state.dart';
 import 'package:park_my_whip_residents/src/core/config/injection.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/widgets/dont_have_account_text.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/widgets/forgot_password.dart';
@@ -21,12 +21,12 @@ class LoginPage extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w),
-          child: BlocBuilder<AuthCubit, AuthState>(
+          child: BlocBuilder<LoginCubit, LoginState>(
             builder: (context, state) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  verticalSpace(50),
+                  verticalSpace(45),
                   Text(
                     AuthStrings.welcomeBack,
                     style: AppTextStyles.urbanistFont34Grey800SemiBold1_2,
@@ -42,9 +42,9 @@ class LoginPage extends StatelessWidget {
                     hintText: AuthStrings.emailHint,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
-                    controller: getIt<AuthCubit>().loginEmailController,
-                    validator: (_) => state.loginEmailError,
-                    onChanged: (_) => getIt<AuthCubit>().onLoginFieldChanged(),
+                    controller: getIt<LoginCubit>().emailController,
+                    validator: (_) => state.emailError,
+                    onChanged: (_) => getIt<LoginCubit>().onFieldChanged(),
                   ),
                   verticalSpace(20),
                   CustomTextField(
@@ -53,15 +53,15 @@ class LoginPage extends StatelessWidget {
                     keyboardType: TextInputType.visiblePassword,
                     textInputAction: TextInputAction.done,
                     isPassword: true,
-                    controller: getIt<AuthCubit>().loginPasswordController,
-                    validator: (_) => state.loginPasswordError,
-                    onChanged: (_) => getIt<AuthCubit>().onLoginFieldChanged(),
+                    controller: getIt<LoginCubit>().passwordController,
+                    validator: (_) => state.passwordError,
+                    onChanged: (_) => getIt<LoginCubit>().onFieldChanged(),
                   ),
                   verticalSpace(4),
                   Visibility(
-                    visible: state.loginGeneralError != null,
+                    visible: state.generalError != null,
                     child: Text(
-                      state.loginGeneralError ?? '',
+                      state.generalError ?? '',
                       style: AppTextStyles.urbanistFont12Red500Regular1_5,
                     ),
                   ),
@@ -73,8 +73,8 @@ class LoginPage extends StatelessWidget {
                   CommonButton(
                     text: state.isLoading ? 'Logging in...' : AuthStrings.login,
                     onPressed: () =>
-                        getIt<AuthCubit>().validateLoginForm(context: context),
-                    isEnabled: state.isLoginButtonEnabled && !state.isLoading,
+                        getIt<LoginCubit>().validateLoginForm(context: context),
+                    isEnabled: state.isButtonEnabled && !state.isLoading,
                   ),
                   verticalSpace(16),
                 ],

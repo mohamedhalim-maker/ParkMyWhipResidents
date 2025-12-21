@@ -7,8 +7,8 @@ import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 import 'package:park_my_whip_residents/src/core/widgets/custom_text_field.dart';
-import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/auth_state.dart' as auth_state;
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_cubit.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_state.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/widgets/password_validation_rules.dart';
 
 class ResetPasswordPage extends StatelessWidget {
@@ -16,19 +16,20 @@ class ResetPasswordPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = getIt<AuthCubit>();
+    final cubit = getIt<ForgotPasswordCubit>();
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w),
-          child: BlocBuilder<AuthCubit, auth_state.AuthState>(
+          child: BlocBuilder<ForgotPasswordCubit, ForgotPasswordState>(
             buildWhen: (previous, current) =>
-                previous.resetPasswordError != current.resetPasswordError ||
-                previous.resetConfirmPasswordError != current.resetConfirmPasswordError ||
-                previous.isResetPasswordButtonEnabled != current.isResetPasswordButtonEnabled ||
+                previous.passwordError != current.passwordError ||
+                previous.confirmPasswordError != current.confirmPasswordError ||
+                previous.isPasswordButtonEnabled !=
+                    current.isPasswordButtonEnabled ||
                 previous.isLoading != current.isLoading ||
-                previous.resetPasswordFieldTrigger != current.resetPasswordFieldTrigger,
+                previous.passwordFieldTrigger != current.passwordFieldTrigger,
             builder: (context, state) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,9 +45,9 @@ class ResetPasswordPage extends StatelessWidget {
                     hintText: '',
                     keyboardType: TextInputType.visiblePassword,
                     textInputAction: TextInputAction.next,
-                    controller: cubit.resetPasswordController,
-                    validator: (_) => state.resetPasswordError,
-                    onChanged: (_) => cubit.onResetPasswordFieldChanged(),
+                    controller: cubit.passwordController,
+                    validator: (_) => state.passwordError,
+                    onChanged: (_) => cubit.onPasswordFieldChanged(),
                     isPassword: true,
                   ),
                   verticalSpace(20),
@@ -55,14 +56,14 @@ class ResetPasswordPage extends StatelessWidget {
                     hintText: '',
                     keyboardType: TextInputType.visiblePassword,
                     textInputAction: TextInputAction.done,
-                    controller: cubit.resetConfirmPasswordController,
-                    validator: (_) => state.resetConfirmPasswordError,
-                    onChanged: (_) => cubit.onResetPasswordFieldChanged(),
+                    controller: cubit.confirmPasswordController,
+                    validator: (_) => state.confirmPasswordError,
+                    onChanged: (_) => cubit.onPasswordFieldChanged(),
                     isPassword: true,
                   ),
                   verticalSpace(24),
                   PasswordValidationRules(
-                    password: cubit.resetPasswordController.text,
+                    password: cubit.passwordController.text,
                   ),
                   Spacer(),
                   CommonButton(
@@ -70,9 +71,9 @@ class ResetPasswordPage extends StatelessWidget {
                         ? 'Resetting...'
                         : AuthStrings.continueText,
                     onPressed: () =>
-                        cubit.validateResetPasswordForm(context: context),
+                        cubit.validatePasswordForm(context: context),
                     isEnabled:
-                        state.isResetPasswordButtonEnabled && !state.isLoading,
+                        state.isPasswordButtonEnabled && !state.isLoading,
                   ),
                   verticalSpace(16),
                 ],
@@ -84,4 +85,3 @@ class ResetPasswordPage extends StatelessWidget {
     );
   }
 }
-
