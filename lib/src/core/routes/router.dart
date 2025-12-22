@@ -15,6 +15,7 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forg
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/reset_password_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/password_reset_success_page.dart';
 import 'package:park_my_whip_residents/src/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:park_my_whip_residents/src/features/splash/presentation/pages/splash_page.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class AppRouter {
@@ -34,6 +35,11 @@ class AppRouter {
 
   static Route<dynamic> generate(RouteSettings settings) {
     switch (settings.name) {
+      case RoutesName.splash:
+        return MaterialPageRoute(
+          builder: (_) => const SplashPage(),
+        );
+
       case RoutesName.login:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(

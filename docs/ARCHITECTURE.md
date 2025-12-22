@@ -42,6 +42,31 @@ This project follows **Clean Architecture** with **BLoC pattern** for state mana
 - **Services**: API operations (CRUD)
 - **Auth Manager**: Authentication abstraction
 
+## Logging
+
+Use `AppLogger` from `lib/src/core/helpers/app_logger.dart` for all logging instead of `print()` or `debugPrint()`.
+
+```dart
+import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
+
+// General logging
+AppLogger.info('User logged in successfully');
+AppLogger.debug('Processing item: $itemId');
+AppLogger.warning('Rate limit approaching');
+AppLogger.error('Failed to fetch data', error: e, stackTrace: stackTrace);
+
+// Domain-specific logging
+AppLogger.deepLink('Received deep link: $uri');
+AppLogger.auth('Auth state changed: $event');
+AppLogger.navigation('Navigating to: $route');
+```
+
+Benefits over print/debugPrint:
+- Categorized logs with named channels
+- Log levels for filtering
+- Proper error and stack trace handling
+- Consistent format across the app
+
 ## Key Design Decisions
 
 ### 1. One Cubit Per Flow (Single Responsibility)
@@ -117,6 +142,75 @@ mixin EmailSignInManager on AuthManager {
 class SupabaseAuthManager extends AuthManager with EmailSignInManager { ... }
 ```
 
+### 5. Deep Link Handling with Splash Gate Pattern
+
+The app uses a **Splash Gate** pattern to handle deep links without the "white flash" issue that occurs when deep links are processed asynchronously after the initial route renders.
+
+**Problem solved**: When a user taps a deep link (e.g., password reset), the app would briefly show the default route before navigating to the correct destination.
+
+**Solution**: The app starts with `SplashPage` as the initial route, which waits for deep link resolution before navigating.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DEEP LINK FLOW                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  App Launch ──► SplashPage (loading state)                  │
+│                     │                                       │
+│                     ▼                                       │
+│         DeepLinkService.waitForDeepLinkResolution()         │
+│                     │                                       │
+│         ┌─────────────────────────────┐                     │
+│         │                             │                     │
+│         ▼                             ▼                     │
+│   Deep Link Found?              No Deep Link                │
+│         │                             │                     │
+│         ▼                             ▼                     │
+│   Navigate to target         Check auth state               │
+│   (resetPassword/            │                              │
+│    resetLinkError)     ┌─────────────────┐                  │
+│                        │                 │                  │
+│                        ▼                 ▼                  │
+│                   Logged in?       Not logged in            │
+│                        │                 │                  │
+│                        ▼                 ▼                  │
+│                   Dashboard           Login                 │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Components**:
+
+1. **DeepLinkService** (`lib/src/core/services/deep_link_service.dart`):
+   - Uses a `Completer` to signal when deep link processing completes
+   - Handles both initial deep links (app opened via link) and runtime deep links
+   - Detects error parameters (expired/invalid tokens) in URLs
+   - Integrates with Supabase auth state for password recovery
+
+2. **SplashPage** (`lib/src/features/splash/presentation/pages/splash_page.dart`):
+   - Acts as a gate that waits for deep link resolution
+   - Shows a loading indicator during resolution
+   - Navigates to the appropriate route based on deep link or auth state
+
+**Error Handling for Deep Links**:
+
+```dart
+// Deep link with error parameters:
+// parkmywhip-resident://reset-password?error=access_denied&error_code=otp_expired
+
+// The service detects these errors and navigates to ResetLinkErrorPage
+if (queryError != null || queryErrorCode != null) {
+  _completeDeepLinkProcessing(RoutesName.resetLinkError);
+}
+```
+
+**Initial vs Runtime Deep Links**:
+
+| Type | Scenario | Handling |
+|------|----------|----------|
+| Initial | App opened via deep link | SplashPage waits, then navigates |
+| Runtime | Deep link while app running | Direct navigation via Navigator |
+
 ## Project Structure
 
 ```
@@ -143,6 +237,7 @@ lib/
     │   │   ├── strings.dart            # UI strings
     │   │   └── text_style.dart         # Text styles
     │   ├── helpers/
+    │   │   ├── app_logger.dart         # Centralized logging utility
     │   │   ├── shared_pref_helper.dart # Local storage
     │   │   └── spacing.dart            # verticalSpace(), horizontalSpace()
     │   ├── models/
@@ -176,10 +271,15 @@ lib/
         │       │   └── forgot_password_pages/
         │       └── widgets/            # Auth-specific widgets
         │
-        └── dashboard/
+        ├── dashboard/
+        │   └── presentation/
+        │       └── pages/
+        │           └── dashboard_page.dart
+        │
+        └── splash/
             └── presentation/
                 └── pages/
-                    └── dashboard_page.dart
+                    └── splash_page.dart  # Initial route, waits for deep links
 ```
 
 ## Data Flow

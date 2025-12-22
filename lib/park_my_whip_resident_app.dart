@@ -21,7 +21,7 @@ class ParkMyWhipResidentApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           navigatorKey: AppRouter.navigatorKey,
           onGenerateRoute: AppRouter.generate,
-          initialRoute: RoutesName.login,
+          initialRoute: RoutesName.splash,
         );
       },
     );
