@@ -2,8 +2,11 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:park_my_whip_residents/auth/auth_manager.dart';
+import 'package:park_my_whip_residents/src/core/constants/app_config.dart';
 import 'package:park_my_whip_residents/src/core/helpers/shared_pref_helper.dart';
+import 'package:park_my_whip_residents/src/core/models/user_app_model.dart';
 import 'package:park_my_whip_residents/src/core/models/user_model.dart';
+import 'package:park_my_whip_residents/src/core/networking/network_exceptions.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
@@ -32,14 +35,34 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       log('Sign in successful for: $email', name: 'SupabaseAuthManager');
 
-      // Fetch user profile from database
-      final user = await _getUserProfile(response.user!.id);
+      // Check if user is registered for this app
+      final userApp = await _getUserAppRegistration(response.user!.id);
+      if (userApp == null) {
+        log('User not registered for app: ${AppConfig.appId}',
+            name: 'SupabaseAuthManager');
+        // Sign out the user since they're not registered for this app
+        await SupabaseConfig.auth.signOut();
+        throw Exception(
+            'Your account is not registered for this app. Please sign up first.');
+      }
+
+      // Check if user is active in this app
+      if (!userApp.isActive) {
+        log('User is deactivated for app: ${AppConfig.appId}',
+            name: 'SupabaseAuthManager');
+        await SupabaseConfig.auth.signOut();
+        throw Exception(
+            'Your account has been deactivated for this app. Please contact support.');
+      }
+
+      // Fetch user profile from database with app registration
+      final user = await _getUserProfile(response.user!.id, userApp: userApp);
       if (user != null) {
         await _cacheUser(user);
         return user;
       }
 
-      // If user doesn't exist in database, create it
+      // If user doesn't exist in database, create it and register for app
       log('User profile not found, creating new record',
           name: 'SupabaseAuthManager');
       await _createUserRecord(
@@ -47,22 +70,23 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         response.user!.email ?? email,
       );
 
-      // Fetch the newly created user
-      final newUser = await _getUserProfile(response.user!.id);
+      // Fetch the newly created user with app registration
+      final newUser = await _getUserProfile(response.user!.id, userApp: userApp);
       if (newUser != null) {
         await _cacheUser(newUser);
         return newUser;
       }
 
       // Fallback: return basic user from auth response
-      return _userFromAuthUser(response.user!);
+      return _userFromAuthUser(response.user!, userApp: userApp);
     } on sb.AuthException catch (e) {
       log('Auth error during sign in: ${e.message}',
           name: 'SupabaseAuthManager');
-      throw Exception(_handleAuthError(e));
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     } catch (e) {
       log('Error during sign in: $e', name: 'SupabaseAuthManager');
-      throw Exception('An unexpected error occurred. Please try again.');
+      if (e is Exception) rethrow;
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     }
   }
 
@@ -95,39 +119,66 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       debugPrint(
           '✅ [SIGNUP] Account created successfully. User ID: ${signUpResponse.user!.id}');
 
-      // Step 2: Create user profile in database
-      try {
-        debugPrint('🔵 [SIGNUP] Creating user profile in database...');
-        await SupabaseConfig.client.from('users').insert({
-          'id': signUpResponse.user!.id,
-          'email': email,
-          'full_name': email.split('@')[0],
-          'role': 'user',
-          'is_active': true,
-          'metadata': {},
-        });
-        debugPrint('✅ [SIGNUP] User profile created in database');
-      } catch (dbError) {
-        debugPrint('🔴 [SIGNUP ERROR] Database insert error: $dbError');
-        if (dbError is PostgrestException) {
-          debugPrint(
-              '🔴 [SIGNUP ERROR] Postgrest error - Code: ${dbError.code}, Message: ${dbError.message}');
-          // If RLS policy error, show helpful message
-          if (dbError.code == '42501' ||
-              dbError.message?.contains('policy') == true) {
-            throw Exception(
-                'Database permission error. Please check your Supabase RLS policies for the users table.');
+      // Step 2: Check if user already exists (for existing users signing up for new app)
+      final existingUser = await _getUserProfileData(signUpResponse.user!.id);
+      
+      if (existingUser == null) {
+        // Step 2a: Create user profile in database for new users
+        try {
+          debugPrint('🔵 [SIGNUP] Creating user profile in database...');
+          await SupabaseConfig.client.from('users').insert({
+            'id': signUpResponse.user!.id,
+            'email': email,
+            'full_name': email.split('@')[0],
+            'is_active': true,
+            'metadata': {},
+          });
+          debugPrint('✅ [SIGNUP] User profile created in database');
+        } catch (dbError) {
+          debugPrint('🔴 [SIGNUP ERROR] Database insert error: $dbError');
+          if (dbError is PostgrestException) {
+            debugPrint(
+                '🔴 [SIGNUP ERROR] Postgrest error - Code: ${dbError.code}, Message: ${dbError.message}');
+            // If RLS policy error, show helpful message
+            if (dbError.code == '42501' ||
+                dbError.message?.contains('policy') == true) {
+              throw Exception(
+                  'Database permission error. Please check your Supabase RLS policies for the users table.');
+            }
           }
+          throw Exception('Failed to create user profile: $dbError');
         }
-        throw Exception('Failed to create user profile: $dbError');
+      } else {
+        debugPrint('🔵 [SIGNUP] User already exists, registering for new app');
       }
 
-      // Step 3: Send verification email with deep link
+      // Step 3: Register user for this app in user_apps table
+      UserApp? userApp;
+      try {
+        debugPrint('🔵 [SIGNUP] Registering user for app: ${AppConfig.appId}');
+        userApp = await _registerUserForApp(signUpResponse.user!.id);
+        debugPrint('✅ [SIGNUP] User registered for app successfully');
+      } catch (appError) {
+        debugPrint('🔴 [SIGNUP ERROR] App registration error: $appError');
+        if (appError is PostgrestException) {
+          // Check if user is already registered for this app
+          if (appError.code == '23505') {
+            debugPrint('⚠️ [SIGNUP] User already registered for this app');
+            userApp = await _getUserAppRegistration(signUpResponse.user!.id);
+          } else {
+            throw Exception('Failed to register for app: $appError');
+          }
+        } else {
+          throw Exception('Failed to register for app: $appError');
+        }
+      }
+
+      // Step 4: Send verification email with deep link
       try {
         debugPrint('🔵 [SIGNUP] Sending verification email...');
         await SupabaseConfig.auth.signInWithOtp(
           email: email,
-          emailRedirectTo: 'parkmywhip-resident://verify-email',
+          emailRedirectTo: '${AppConfig.deepLinkScheme}://verify-email',
         );
         debugPrint('✅ [SIGNUP] Verification email sent successfully');
       } catch (emailError) {
@@ -137,8 +188,8 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         // User can resend the email later
       }
 
-      // Return basic user from auth response
-      return _userFromAuthUser(signUpResponse.user!);
+      // Return basic user from auth response with app registration
+      return _userFromAuthUser(signUpResponse.user!, userApp: userApp);
     } on sb.AuthException catch (e) {
       debugPrint(
           '🔴 [SIGNUP ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}');
@@ -160,7 +211,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       // Use signInWithOtp to send verification link
       await SupabaseConfig.auth.signInWithOtp(
         email: email,
-        emailRedirectTo: 'parkmywhip-resident://verify-email',
+        emailRedirectTo: '${AppConfig.deepLinkScheme}://verify-email',
       );
       debugPrint('✅ [RESEND] Verification email resent successfully');
     } on sb.AuthException catch (e) {
@@ -192,11 +243,27 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         throw Exception('No user is currently signed in.');
       }
 
-      // Delete user record from database
-      await SupabaseService.delete('users', filters: {'id': user.id});
+      // Delete user's app registration from user_apps
+      await SupabaseService.delete('user_apps', filters: {
+        'user_id': user.id,
+        'app_id': AppConfig.appId,
+      });
 
-      // Delete auth user
-      await SupabaseConfig.client.rpc('delete_user');
+      // Check if user has any other app registrations
+      final otherApps = await SupabaseConfig.client
+          .from('user_apps')
+          .select('id')
+          .eq('user_id', user.id);
+
+      // Only delete user record and auth if no other apps
+      if (otherApps.isEmpty) {
+        // Delete user record from database
+        await SupabaseService.delete('users', filters: {'id': user.id});
+
+        // Delete auth user
+        await SupabaseConfig.client.rpc('delete_user');
+      }
+
       await _clearUserCache();
 
       log('User deleted successfully', name: 'SupabaseAuthManager');
@@ -228,10 +295,10 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     } on sb.AuthException catch (e) {
       log('Auth error updating email: ${e.message}',
           name: 'SupabaseAuthManager');
-      throw Exception(_handleAuthError(e));
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     } catch (e) {
       log('Error updating email: $e', name: 'SupabaseAuthManager');
-      throw Exception('Failed to update email. Please try again.');
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     }
   }
 
@@ -248,7 +315,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       // Supabase will handle checking if the email exists
       await SupabaseConfig.auth.resetPasswordForEmail(
         email,
-        redirectTo: 'parkmywhip-resident://reset-password',
+        redirectTo: '${AppConfig.deepLinkScheme}://reset-password',
       );
 
       log('✅ [RESET PASSWORD] Email sent successfully to: $email',
@@ -256,31 +323,12 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     } on sb.AuthException catch (e) {
       log('🔴 [RESET PASSWORD ERROR] Auth error - Status: ${e.statusCode}, Message: ${e.message}',
           name: 'SupabaseAuthManager', level: 900);
-
-      // Handle rate limiting explicitly - check both message and status code
-      final errorMessage = e.message.toLowerCase();
-      if (errorMessage.contains('too many') ||
-          errorMessage.contains('rate limit') ||
-          errorMessage.contains('email rate limit exceeded') ||
-          e.statusCode == '429') {
-        throw Exception(
-            'Too many password reset attempts. Please wait a few minutes before trying again.');
-      }
-
-      // Handle other auth errors
-      throw Exception(_handleAuthError(e));
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     } catch (e) {
       log('🔴 [RESET PASSWORD ERROR] Unexpected error: $e',
           name: 'SupabaseAuthManager', level: 900);
-
-      // Re-throw custom exceptions without wrapping
-      final errorString = e.toString();
-      if (errorString.contains('No account found') ||
-          errorString.contains('Too many password reset attempts')) {
-        rethrow;
-      }
-
-      throw Exception('Failed to send password reset email. Please try again.');
+      if (e is Exception) rethrow;
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     }
   }
 
@@ -299,17 +347,17 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     } on sb.AuthException catch (e) {
       log('Auth error updating password: ${e.message}',
           name: 'SupabaseAuthManager');
-      throw Exception(_handleAuthError(e));
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     } catch (e) {
       log('Error updating password: $e', name: 'SupabaseAuthManager');
-      throw Exception('Failed to update password. Please try again.');
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
     }
   }
 
   // Private helper methods
 
-  /// Fetches user profile from the database
-  Future<User?> _getUserProfile(String userId) async {
+  /// Fetches user profile from the database with optional app registration
+  Future<User?> _getUserProfile(String userId, {UserApp? userApp}) async {
     try {
       final data = await SupabaseService.selectSingle(
         'users',
@@ -317,13 +365,70 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       );
 
       if (data != null) {
-        return User.fromJson(data);
+        return User.fromJson(data, userApp: userApp);
       }
       return null;
     } catch (e) {
       log('Could not fetch user profile: $e', name: 'SupabaseAuthManager');
       return null;
     }
+  }
+
+  /// Fetches raw user profile data from the database (without User model)
+  Future<Map<String, dynamic>?> _getUserProfileData(String userId) async {
+    try {
+      return await SupabaseService.selectSingle(
+        'users',
+        filters: {'id': userId},
+      );
+    } catch (e) {
+      log('Could not fetch user profile data: $e', name: 'SupabaseAuthManager');
+      return null;
+    }
+  }
+
+  /// Fetches user's app registration from user_apps table
+  Future<UserApp?> _getUserAppRegistration(String userId) async {
+    try {
+      final data = await SupabaseService.selectSingle(
+        'user_apps',
+        filters: {
+          'user_id': userId,
+          'app_id': AppConfig.appId,
+        },
+      );
+
+      if (data != null) {
+        return UserApp.fromJson(data);
+      }
+      return null;
+    } catch (e) {
+      log('Could not fetch user app registration: $e',
+          name: 'SupabaseAuthManager');
+      return null;
+    }
+  }
+
+  /// Registers a user for the current app
+  Future<UserApp> _registerUserForApp(String userId) async {
+    final now = DateTime.now().toIso8601String();
+    final data = {
+      'user_id': userId,
+      'app_id': AppConfig.appId,
+      'role': 'user',
+      'is_active': true,
+      'app_specific_data': {},
+      'created_at': now,
+      'updated_at': now,
+    };
+
+    final result = await SupabaseConfig.client
+        .from('user_apps')
+        .insert(data)
+        .select()
+        .single();
+
+    return UserApp.fromJson(result);
   }
 
   /// Creates a new user record in the database
@@ -333,7 +438,6 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         'id': userId,
         'email': email,
         'full_name': email.split('@')[0], // Default to email username
-        'role': 'user',
         'is_active': true,
         'metadata': {},
         'created_at': DateTime.now().toIso8601String(),
@@ -347,17 +451,17 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
   }
 
   /// Creates a basic User object from Supabase auth user
-  User _userFromAuthUser(sb.User authUser) => User(
+  User _userFromAuthUser(sb.User authUser, {UserApp? userApp}) => User(
         id: authUser.id,
         email: authUser.email ?? '',
         fullName: authUser.email?.split('@')[0] ?? 'User',
         phone: authUser.phone,
         avatarUrl: null,
-        role: 'user',
         isActive: true,
         metadata: {},
         createdAt: DateTime.parse(authUser.createdAt),
         updatedAt: DateTime.now(),
+        userApp: userApp,
       );
 
   /// Caches user data in local storage
@@ -380,45 +484,5 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     } catch (e) {
       log('Error clearing cache: $e', name: 'SupabaseAuthManager');
     }
-  }
-
-  /// Converts Supabase auth errors to user-friendly messages
-  String _handleAuthError(sb.AuthException error) {
-    final message = error.message.toLowerCase();
-
-    if (message.contains('invalid login credentials') ||
-        message.contains('invalid credentials')) {
-      return 'Invalid email or password. Please try again.';
-    }
-
-    if (message.contains('email not confirmed') ||
-        message.contains('email not verified')) {
-      return 'Please verify your email address before logging in. Check your inbox for the verification link.';
-    }
-
-    if (message.contains('user not found')) {
-      return 'No account found with this email.';
-    }
-
-    if (message.contains('email already registered') ||
-        message.contains('user already registered')) {
-      return 'This email is already registered. Try logging in instead.';
-    }
-
-    if (message.contains('weak password')) {
-      return 'Password is too weak. Use at least 6 characters.';
-    }
-
-    if (message.contains('invalid email')) {
-      return 'Please enter a valid email address.';
-    }
-
-    if (message.contains('too many requests')) {
-      return 'Too many attempts. Please try again later.';
-    }
-
-    return error.message.isNotEmpty
-        ? error.message
-        : 'Authentication failed. Please try again.';
   }
 }

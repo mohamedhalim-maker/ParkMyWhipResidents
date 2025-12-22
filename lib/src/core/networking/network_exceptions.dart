@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:park_my_whip_residents/src/core/routes/router.dart';
 import 'package:park_my_whip_residents/src/core/widgets/error_dialog.dart';
@@ -12,8 +11,11 @@ abstract class NetworkExceptions {
   static String getSupabaseExceptionMessage(dynamic error) {
     log('Processing error: $error', name: 'NetworkExceptions', level: 900, error: error);
 
-    // Network connectivity issues
-    if (error is SocketException) {
+    // Network connectivity issues (cross-platform check)
+    final errorLower = error.toString().toLowerCase();
+    if (errorLower.contains('socketexception') ||
+        errorLower.contains('network is unreachable') ||
+        errorLower.contains('connection refused')) {
       return 'No internet connection. Please check your network settings.';
     }
 
