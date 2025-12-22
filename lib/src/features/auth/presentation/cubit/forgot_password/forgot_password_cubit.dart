@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:park_my_whip_residents/auth/auth_manager.dart';
+import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_state.dart';
@@ -59,10 +59,10 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
     try {
       await authManager.resetPassword(
         email: emailController.text.trim(),
-        context: context,
       );
-      log('✅ Password reset email sent successfully', name: 'ForgotPasswordCubit');
-      
+      log('✅ Password reset email sent successfully',
+          name: 'ForgotPasswordCubit');
+
       // Only proceed if there was no error
       emit(state.copyWith(isLoading: false, emailError: null));
 
@@ -74,25 +74,28 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
         Navigator.of(context).pushReplacementNamed(RoutesName.resetLinkSent);
       }
     } catch (e) {
-      log('🔴 Forgot password error: $e', name: 'ForgotPasswordCubit', level: 900);
-      
+      log('🔴 Forgot password error: $e',
+          name: 'ForgotPasswordCubit', level: 900);
+
       // Extract clean error message
-      String errorMessage = e.toString()
+      String errorMessage = e
+          .toString()
           .replaceFirst('Exception: ', '')
           .replaceFirst('Error: ', '');
-      
+
       // Ensure we don't show empty error
       if (errorMessage.isEmpty || errorMessage == 'null') {
         errorMessage = 'Failed to send reset link. Please try again.';
       }
-      
-      log('🔴 Displaying error to user: $errorMessage', name: 'ForgotPasswordCubit', level: 900);
-      
+
+      log('🔴 Displaying error to user: $errorMessage',
+          name: 'ForgotPasswordCubit', level: 900);
+
       emit(state.copyWith(
         isLoading: false,
         emailError: errorMessage,
       ));
-      
+
       // DO NOT navigate when there's an error
     }
   }
@@ -120,7 +123,6 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
     try {
       await authManager.resetPassword(
         email: emailController.text.trim(),
-        context: context,
       );
       log('Password reset email resent', name: 'ForgotPasswordCubit');
       emit(state.copyWith(isLoading: false));
@@ -196,7 +198,6 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
     try {
       await authManager.updatePassword(
         newPassword: passwordController.text.trim(),
-        context: context,
       );
       log('Password updated successfully', name: 'ForgotPasswordCubit');
       emit(state.copyWith(isLoading: false));

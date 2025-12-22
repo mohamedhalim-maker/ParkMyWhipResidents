@@ -9,7 +9,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 abstract class NetworkExceptions {
   /// Takes a Supabase exception and returns a user-friendly error message
   static String getSupabaseExceptionMessage(dynamic error) {
-    log('Processing error: $error', name: 'NetworkExceptions', level: 900, error: error);
+    log('Processing error: $error',
+        name: 'NetworkExceptions', level: 900, error: error);
 
     // Network connectivity issues (cross-platform check)
     final errorLower = error.toString().toLowerCase();
@@ -45,7 +46,9 @@ abstract class NetworkExceptions {
 
     // Catch-all for unknown errors - show the actual error
     final errorString = error.toString();
-    return errorString.isNotEmpty ? errorString : 'An unexpected error occurred. Please try again.';
+    return errorString.isNotEmpty
+        ? errorString
+        : 'An unexpected error occurred. Please try again.';
   }
 
   /// Maps Supabase AuthException to user-friendly messages
@@ -53,7 +56,8 @@ abstract class NetworkExceptions {
     final message = error.message.toLowerCase();
     final statusCode = error.statusCode;
 
-    log('Auth error - Code: $statusCode, Message: ${error.message}', name: 'NetworkExceptions', level: 900);
+    log('Auth error - Code: $statusCode, Message: ${error.message}',
+        name: 'NetworkExceptions', level: 900);
 
     // Common auth error patterns
     if (message.contains('invalid login credentials') ||
@@ -93,8 +97,7 @@ abstract class NetworkExceptions {
       return 'This account has been disabled. Contact support.';
     }
 
-    if (message.contains('too many requests') ||
-        statusCode == '429') {
+    if (message.contains('too many requests') || statusCode == '429') {
       return 'Too many attempts. Please try again later.';
     }
 
@@ -122,8 +125,16 @@ abstract class NetworkExceptions {
       return 'OTP not found. Please request a new verification code.';
     }
 
-    if (message.contains('email rate limit exceeded')) {
-      return 'Too many emails sent. Please wait before requesting a new code.';
+    if (message.contains('email rate limit exceeded') ||
+        message.contains('over_email_send_rate_limit') ||
+        message.contains('can only request this after')) {
+      // Extract the wait time if present in the message
+      final match = RegExp(r'after (\d+) seconds').firstMatch(message);
+      if (match != null) {
+        final seconds = match.group(1);
+        return 'Too many emails sent. Please wait $seconds seconds before trying again.';
+      }
+      return 'Too many emails sent. Please wait a moment before requesting a new code.';
     }
 
     // Signup specific errors
@@ -139,7 +150,8 @@ abstract class NetworkExceptions {
       return 'Email service is temporarily unavailable. Please try again.';
     }
 
-    if (message.contains('captcha') || message.contains('verification failed')) {
+    if (message.contains('captcha') ||
+        message.contains('verification failed')) {
       return 'Verification failed. Please try again.';
     }
 
@@ -147,7 +159,8 @@ abstract class NetworkExceptions {
       return 'Failed to save user data. Please try again.';
     }
 
-    if (message.contains('new password should be different from the old password')) {
+    if (message
+        .contains('new password should be different from the old password')) {
       return 'New password should be different from the old password.';
     }
 
@@ -162,7 +175,8 @@ abstract class NetworkExceptions {
     final message = error.message?.toLowerCase() ?? '';
     final code = error.code;
 
-    log('Database error - Code: $code, Message: ${error.message}', name: 'NetworkExceptions', level: 900);
+    log('Database error - Code: $code, Message: ${error.message}',
+        name: 'NetworkExceptions', level: 900);
 
     if (code == '23505') {
       return 'This record already exists in the database.';
@@ -172,7 +186,9 @@ abstract class NetworkExceptions {
       return 'Cannot delete this record as it is referenced by other data.';
     }
 
-    if (code == '42501' || message.contains('permission denied') || message.contains('policy')) {
+    if (code == '42501' ||
+        message.contains('permission denied') ||
+        message.contains('policy')) {
       return 'Permission denied. This might be due to Row Level Security (RLS) policies in your Supabase database. Please check your database policies.';
     }
 
@@ -207,7 +223,8 @@ abstract class NetworkExceptions {
     final message = error.message?.toLowerCase() ?? '';
     final statusCode = error.statusCode;
 
-    log('Storage error - Code: $statusCode, Message: ${error.message}', name: 'NetworkExceptions', level: 900);
+    log('Storage error - Code: $statusCode, Message: ${error.message}',
+        name: 'NetworkExceptions', level: 900);
 
     if (statusCode == '404' || message.contains('not found')) {
       return 'File not found in storage.';
@@ -237,7 +254,7 @@ abstract class NetworkExceptions {
 
   /// Shows an error dialog with the translated error message
   /// Use this when there's no UI space to display inline error messages
-  /// 
+  ///
   /// Example usage:
   /// ```dart
   /// try {
@@ -253,12 +270,13 @@ abstract class NetworkExceptions {
   }) {
     final context = AppRouter.navigatorKey.currentContext;
     if (context == null) {
-      log('Cannot show dialog - no context available', name: 'NetworkExceptions', level: 900);
+      log('Cannot show dialog - no context available',
+          name: 'NetworkExceptions', level: 900);
       return;
     }
 
     final errorMessage = getSupabaseExceptionMessage(error);
-    
+
     showDialog(
       context: context,
       builder: (_) => ErrorDialog(

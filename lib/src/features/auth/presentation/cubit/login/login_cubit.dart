@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:park_my_whip_residents/auth/auth_manager.dart';
+import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_state.dart';
@@ -54,7 +54,6 @@ class LoginCubit extends Cubit<LoginState> {
 
     try {
       final user = await (authManager as EmailSignInManager).signInWithEmail(
-        context,
         emailController.text.trim(),
         passwordController.text.trim(),
       );
