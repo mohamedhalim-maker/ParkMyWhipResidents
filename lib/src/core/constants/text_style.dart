@@ -30,12 +30,12 @@ class AppTextStyles {
 
   static TextStyle urbanistFont16Grey800Opacity40Regular1_3 =
       GoogleFonts.urbanist(
-        fontSize: 16.sp,
-        fontWeight: FontWeightHelper.regular,
-        color: AppColor.grey800.withValues(alpha: 0.4),
-        height: 22 / 16, // 1.375
-        letterSpacing: 0,
-      );
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.regular,
+    color: AppColor.grey800.withValues(alpha: 0.4),
+    height: 22 / 16, // 1.375
+    letterSpacing: 0,
+  );
 
   static TextStyle urbanistFont16Grey800Regular1_3 = GoogleFonts.urbanist(
     fontSize: 16.sp,
@@ -87,12 +87,12 @@ class AppTextStyles {
 
   static TextStyle plusJakartaSansFont12Neutral800Regular1 =
       GoogleFonts.plusJakartaSans(
-        fontSize: 12.sp,
-        fontWeight: FontWeightHelper.regular,
-        color: AppColor.neutral800, // #1E1E1ECC
-        height: 1.0, // 100%
-        letterSpacing: 0,
-      );
+    fontSize: 12.sp,
+    fontWeight: FontWeightHelper.regular,
+    color: AppColor.neutral800, // #1E1E1ECC
+    height: 1.0, // 100%
+    letterSpacing: 0,
+  );
 
   static TextStyle figtreeFont12Primary70SemiBold1_33 = GoogleFonts.figtree(
     fontSize: 12.sp,

@@ -19,7 +19,6 @@ class AppTheme {
         onError: AppColor.white,
       ),
       fontFamily: 'Urbanist',
-      
       appBarTheme: AppBarTheme(
         backgroundColor: AppColor.white,
         elevation: 0,
@@ -31,12 +30,12 @@ class AppTheme {
           color: AppColor.grey800,
         ),
       ),
-      
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColor.richRed,
           foregroundColor: AppColor.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           elevation: 0,
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
           textStyle: TextStyle(
@@ -45,7 +44,6 @@ class AppTheme {
           ),
         ),
       ),
-      
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColor.grey50,
@@ -67,7 +65,6 @@ class AppTheme {
         ),
         contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       ),
-      
       cardTheme: CardThemeData(
         color: AppColor.white,
         elevation: 0,
@@ -76,7 +73,6 @@ class AppTheme {
           side: BorderSide(color: AppColor.grey200, width: 1),
         ),
       ),
-      
       dividerTheme: DividerThemeData(
         color: AppColor.grey200,
         thickness: 1,

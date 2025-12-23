@@ -302,22 +302,22 @@ abstract class NetworkExceptions {
 ```dart
 class SharedPrefHelper {
   static const String _userKey = 'cached_user';
+  
+  // SharedPreferences is injected via GetIt (initialized in main.dart)
+  SharedPreferences get _prefs => getIt<SharedPreferences>();
 
   Future<void> saveUser(User user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userKey, jsonEncode(user.toJson()));
+    await _prefs.setString(_userKey, jsonEncode(user.toJson()));
   }
 
   Future<User?> getUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(_userKey);
+    final json = _prefs.getString(_userKey);
     if (json == null) return null;
     return User.fromJson(jsonDecode(json));
   }
 
   Future<void> clearUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
+    await _prefs.remove(_userKey);
   }
 }
 ```

@@ -28,7 +28,7 @@ class PasswordResetSuccessPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(
-                        '',
+                        'assets/images/success.png',
                         width: 220.w,
                         height: 220.h,
                       ),

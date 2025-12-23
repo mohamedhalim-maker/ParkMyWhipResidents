@@ -12,10 +12,8 @@ class Validators {
     }
 
     // Split by spaces and filter out empty strings
-    final nameParts = trimmedValue
-        .split(' ')
-        .where((part) => part.isNotEmpty)
-        .toList();
+    final nameParts =
+        trimmedValue.split(' ').where((part) => part.isNotEmpty).toList();
 
     if (nameParts.length < 2) {
       return 'Please enter both first and last name';
@@ -98,8 +96,9 @@ class Validators {
 
     // UK plate format: 2 letters + 2 numbers + 3 letters (e.g., AB12CDE)
     // Also accepts old format: 1 letter + 1-3 numbers + 3 letters (e.g., A123BCD)
-    final ukPlateFormat = RegExp(r'^[A-Z]{2}\d{2}[A-Z]{3}$|^[A-Z]\d{1,3}[A-Z]{3}$');
-    
+    final ukPlateFormat =
+        RegExp(r'^[A-Z]{2}\d{2}[A-Z]{3}$|^[A-Z]\d{1,3}[A-Z]{3}$');
+
     if (!ukPlateFormat.hasMatch(trimmedValue)) {
       return 'Invalid UK plate format (e.g., AB12CDE)';
     }

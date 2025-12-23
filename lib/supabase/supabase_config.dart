@@ -5,13 +5,17 @@ import 'package:flutter/foundation.dart';
 /// Replace YOUR_ and YOUR_ with your actual values
 class SupabaseConfig {
   static const String supabaseUrl = 'https://iwvwieznrsokscxibgiw.supabase.co';
-  static const String anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3dndpZXpucnNva3NjeGliZ2l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MDY5OTYsImV4cCI6MjA4MTM4Mjk5Nn0.D0JiKreqxqLrTKohszYXQWaS-cQsAdmiaYIePQCSBFU';
+  static const String anonKey =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3dndpZXpucnNva3NjeGliZ2l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4MDY5OTYsImV4cCI6MjA4MTM4Mjk5Nn0.D0JiKreqxqLrTKohszYXQWaS-cQsAdmiaYIePQCSBFU';
 
   static Future<void> initialize() async {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: anonKey,
       debug: kDebugMode,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
     );
   }
 

@@ -42,6 +42,24 @@ class UserProfileRepository {
     }
   }
 
+  /// Fetches user profile data by email from the database
+  /// Uses RPC function to bypass RLS (for password reset validation)
+  Future<Map<String, dynamic>?> getUserProfileByEmail(String email) async {
+    try {
+      final result = await SupabaseConfig.client
+          .rpc('get_user_by_email', params: {'user_email': email});
+
+      if (result == null) return null;
+
+      // RPC returns jsonb, convert to Map
+      return Map<String, dynamic>.from(result as Map);
+    } catch (e) {
+      log('Failed to fetch user profile by email: $e',
+          name: AuthConstants.loggerName, error: e);
+      return null;
+    }
+  }
+
   /// Creates a new user record in the database
   Future<void> createUserProfile({
     required String userId,

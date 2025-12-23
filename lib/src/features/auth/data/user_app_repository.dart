@@ -43,7 +43,7 @@ class UserAppRepository {
       'app_id': appId,
       'role': role ?? AuthConstants.defaultUserRole,
       'is_active': true,
-      'app_specific_data': {},
+      'metadata': {},
       'created_at': now,
       'updated_at': now,
     };

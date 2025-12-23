@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
+
 class CommonButton extends StatelessWidget {
   const CommonButton({
     super.key,
@@ -25,7 +26,6 @@ class CommonButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 48.h,
-
       width: double.infinity,
       child: ElevatedButton(
         onPressed: isEnabled ? onPressed : null,

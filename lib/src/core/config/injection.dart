@@ -9,9 +9,21 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forg
 
 final getIt = GetIt.instance;
 
-void setupDependencyInjection() {
-  // Helpers
+/// Setup dependency injection for the app.
+///
+/// **Registration Order:**
+/// 1. Helpers (no dependencies)
+/// 2. Services (depend on helpers)
+/// 3. Cubits (depend on services)
+///
+/// **Critical:** This MUST run before PasswordRecoveryManager uses SharedPrefHelper.
+Future<void> setupDependencyInjection() async {
+  // Helpers (no dependencies) - registered as lazy singletons
+  // SharedPrefHelper is used by PasswordRecoveryManager for recovery flag storage
   getIt.registerLazySingleton<SharedPrefHelper>(() => SharedPrefHelper());
+
+  // Initialize SharedPrefHelper cache for synchronous access
+  await getIt<SharedPrefHelper>().init();
 
   // Auth Manager
   getIt.registerLazySingleton<AuthManager>(

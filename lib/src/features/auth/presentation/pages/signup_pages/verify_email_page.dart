@@ -70,8 +70,7 @@ class VerifyEmailPage extends StatelessWidget {
                             .navigateBackToEmailEntry(context: context),
                         child: Text(
                           AuthStrings.change,
-                          style:
-                              AppTextStyles.urbanistFont16RichRedSemiBold1_2,
+                          style: AppTextStyles.urbanistFont16RichRedSemiBold1_2,
                         ),
                       ),
                     ],

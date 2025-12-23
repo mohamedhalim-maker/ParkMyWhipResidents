@@ -5,8 +5,14 @@ import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class OtpWidget extends StatelessWidget {
-  const OtpWidget({super.key, required this.onChanged, this.errorMessage});
-  final Function(String) onChanged;
+  const OtpWidget({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+    this.errorMessage,
+  });
+  final TextEditingController controller;
+  final VoidCallback onChanged;
   final String? errorMessage;
 
   @override
@@ -22,17 +28,20 @@ class OtpWidget extends StatelessWidget {
             length: 6,
             hintCharacter: '0',
             obscureText: false,
+            autoFocus: true,
+            cursorColor: AppColor.richRed,
             hintStyle: AppTextStyles.urbanistFont16Grey800Opacity40Regular1_3,
             textStyle: AppTextStyles.urbanistFont16BlackRegular1_2,
             animationType: AnimationType.fade,
+            backgroundColor: Colors.transparent,
             pinTheme: PinTheme(
               shape: PinCodeFieldShape.box,
               borderRadius: BorderRadius.circular(10.r),
               fieldHeight: 44.h,
               fieldWidth: 44.w,
-              activeFillColor: Colors.transparent,
-              selectedFillColor: Colors.transparent,
-              inactiveFillColor: Colors.transparent,
+              activeFillColor: AppColor.white,
+              selectedFillColor: AppColor.white,
+              inactiveFillColor: AppColor.white,
               activeColor: hasError ? AppColor.red : AppColor.grey300,
               selectedColor: hasError ? AppColor.red : AppColor.grey800,
               inactiveColor: hasError ? AppColor.red : AppColor.grey300,
@@ -40,12 +49,12 @@ class OtpWidget extends StatelessWidget {
             ),
             animationDuration: Duration(milliseconds: 300),
             enableActiveFill: true,
-            controller: TextEditingController(),
+            controller: controller,
             onChanged: (value) {
-              onChanged(value);
+              onChanged();
             },
             beforeTextPaste: (text) {
-              return false;
+              return true;
             },
             appContext: context,
           ),

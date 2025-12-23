@@ -3,10 +3,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
 class SharedPrefHelper {
+  // Cache SharedPreferences instance for synchronous access
+  SharedPreferences? _prefs;
+
+  /// Initialize SharedPreferences instance
+  /// Must be called before using getBoolSync()
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  /// Synchronous bool getter (requires init() to be called first)
+  /// Returns null if not initialized
+  bool? getBoolSync(String key) {
+    return _prefs?.getBool(key);
+  }
+
   Future<void> saveString(String key, String value) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       await prefs.setString(key, value);
+      _prefs = prefs;
     } catch (e) {
       debugPrint('Error saving string to SharedPreferences: $e');
       rethrow;
@@ -15,7 +31,8 @@ class SharedPrefHelper {
 
   Future<String?> getString(String key) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
+      _prefs = prefs;
       return prefs.getString(key);
     } catch (e) {
       debugPrint('Error getting string from SharedPreferences: $e');
@@ -25,8 +42,9 @@ class SharedPrefHelper {
 
   Future<void> saveBool(String key, bool value) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       await prefs.setBool(key, value);
+      _prefs = prefs;
     } catch (e) {
       debugPrint('Error saving bool to SharedPreferences: $e');
     }
@@ -34,7 +52,8 @@ class SharedPrefHelper {
 
   Future<bool?> getBool(String key) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
+      _prefs = prefs;
       return prefs.getBool(key);
     } catch (e) {
       debugPrint('Error getting bool from SharedPreferences: $e');
@@ -44,8 +63,9 @@ class SharedPrefHelper {
 
   Future<void> saveInt(String key, int value) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       await prefs.setInt(key, value);
+      _prefs = prefs;
     } catch (e) {
       debugPrint('Error saving int to SharedPreferences: $e');
     }
@@ -53,7 +73,8 @@ class SharedPrefHelper {
 
   Future<int?> getInt(String key) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
+      _prefs = prefs;
       return prefs.getInt(key);
     } catch (e) {
       debugPrint('Error getting int from SharedPreferences: $e');
@@ -63,9 +84,10 @@ class SharedPrefHelper {
 
   Future<void> saveObject(String key, Map<String, dynamic> object) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       final jsonString = jsonEncode(object);
       await prefs.setString(key, jsonString);
+      _prefs = prefs;
     } catch (e) {
       debugPrint('Error saving object to SharedPreferences: $e');
       rethrow;
@@ -74,7 +96,8 @@ class SharedPrefHelper {
 
   Future<Map<String, dynamic>?> getObject(String key) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
+      _prefs = prefs;
       final jsonString = prefs.getString(key);
       if (jsonString != null) {
         return jsonDecode(jsonString) as Map<String, dynamic>;
@@ -88,8 +111,9 @@ class SharedPrefHelper {
 
   Future<void> remove(String key) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       await prefs.remove(key);
+      _prefs = prefs;
     } catch (e) {
       debugPrint('Error removing key from SharedPreferences: $e');
     }
@@ -97,8 +121,9 @@ class SharedPrefHelper {
 
   Future<void> clear() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefs ?? await SharedPreferences.getInstance();
       await prefs.clear();
+      _prefs = prefs;
     } catch (e) {
       debugPrint('Error clearing SharedPreferences: $e');
     }

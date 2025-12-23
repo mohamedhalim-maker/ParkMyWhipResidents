@@ -71,16 +71,19 @@ class SetPasswordPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                        border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline, color: Colors.red, size: 20.sp),
+                          Icon(Icons.error_outline,
+                              color: Colors.red, size: 20.sp),
                           SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
                               state.generalError!,
-                              style: AppTextStyles.urbanistFont14Gray800Regular1_4
+                              style: AppTextStyles
+                                  .urbanistFont14Gray800Regular1_4
                                   .copyWith(color: Colors.red),
                             ),
                           ),
@@ -97,7 +100,8 @@ class SetPasswordPage extends StatelessWidget {
                     text: AuthStrings.continueText,
                     onPressed: () =>
                         cubit.validatePasswordForm(context: context),
-                    isEnabled: state.isPasswordButtonEnabled && !state.isLoading,
+                    isEnabled:
+                        state.isPasswordButtonEnabled && !state.isLoading,
                   ),
                   verticalSpace(16),
                 ],

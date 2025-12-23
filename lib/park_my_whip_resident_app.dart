@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:park_my_whip_residents/src/core/app_style/app_theme.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
-import 'package:park_my_whip_residents/src/core/routes/router.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
+import 'package:park_my_whip_residents/src/core/routes/router.dart';
 
 class ParkMyWhipResidentApp extends StatelessWidget {
   const ParkMyWhipResidentApp({super.key});
@@ -21,7 +21,7 @@ class ParkMyWhipResidentApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           navigatorKey: AppRouter.navigatorKey,
           onGenerateRoute: AppRouter.generate,
-          initialRoute: RoutesName.splash,
+          initialRoute: AppRouter.getInitialRoute(),
         );
       },
     );

@@ -24,6 +24,9 @@ class SignupCubit extends Cubit<SignupState> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
+  // OTP code controller
+  final TextEditingController otpController = TextEditingController();
+
   // Timer for resend email countdown
   Timer? _resendTimer;
 
@@ -213,7 +216,8 @@ class SignupCubit extends Cubit<SignupState> {
   // =========== OTP Verification Methods ===========
 
   // Called when OTP field changes
-  void onOtpFieldChanged({required String text}) {
+  void onOtpFieldChanged() {
+    final text = otpController.text.trim();
     emit(state.copyWith(
       otpCode: text,
       otpError: null,
@@ -295,7 +299,8 @@ class SignupCubit extends Cubit<SignupState> {
 
         // Navigate to dashboard
         if (context.mounted) {
-          AppLogger.navigation('Navigating to dashboard after OTP verification');
+          AppLogger.navigation(
+              'Navigating to dashboard after OTP verification');
           Navigator.of(context).pushNamedAndRemoveUntil(
             RoutesName.dashboard,
             (route) => false,
@@ -326,6 +331,7 @@ class SignupCubit extends Cubit<SignupState> {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    otpController.dispose();
     return super.close();
   }
 }

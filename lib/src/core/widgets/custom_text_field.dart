@@ -28,10 +28,10 @@ class CustomTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final bool isPassword;
   final void Function(String)? onChanged;
-  
+
   /// Maximum number of lines for the text field (default: 1)
   final int maxLines;
-  
+
   /// Maximum number of characters allowed (optional, no limit if null)
   final int? maxLength;
 

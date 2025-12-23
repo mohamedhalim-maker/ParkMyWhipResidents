@@ -96,6 +96,7 @@ class SharedPrefStrings {
   static const String userProfile = 'user_profile';
   static const String authToken = 'auth_token';
   static const String isLoggedIn = 'is_logged_in';
+  static const String isRecoveryMode = 'is_recovery_mode';
 }
 
 class ErrorStrings {

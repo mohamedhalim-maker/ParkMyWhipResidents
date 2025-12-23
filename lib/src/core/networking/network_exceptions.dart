@@ -41,14 +41,36 @@ abstract class NetworkExceptions {
       if (errorString.contains('Exception: ')) {
         return errorString.replaceFirst('Exception: ', '');
       }
-      return errorString;
+      // For other exceptions, try to extract just the message
+      return _extractCleanErrorMessage(errorString);
     }
 
-    // Catch-all for unknown errors - show the actual error
+    // Catch-all for unknown errors - extract clean message
     final errorString = error.toString();
     return errorString.isNotEmpty
-        ? errorString
+        ? _extractCleanErrorMessage(errorString)
         : 'An unexpected error occurred. Please try again.';
+  }
+
+  /// Extracts clean error message from technical error strings
+  /// Removes class names, stack traces, and other technical details
+  static String _extractCleanErrorMessage(String errorString) {
+    // Pattern: ExceptionType (ExceptionType(message: actual message, code: ..., details: ...))
+    final messageMatch = RegExp(r'message:\s*([^,]+)').firstMatch(errorString);
+    if (messageMatch != null) {
+      return messageMatch.group(1)?.trim() ?? errorString;
+    }
+
+    // Pattern: ExceptionType: message
+    if (errorString.contains(': ')) {
+      final parts = errorString.split(': ');
+      if (parts.length >= 2) {
+        return parts.sublist(1).join(': ').trim();
+      }
+    }
+
+    // Return as-is if no pattern matches
+    return errorString;
   }
 
   /// Maps Supabase AuthException to user-friendly messages
@@ -172,7 +194,7 @@ abstract class NetworkExceptions {
 
   /// Maps Supabase PostgrestException to user-friendly messages
   static String _getPostgrestErrorMessage(PostgrestException error) {
-    final message = error.message?.toLowerCase() ?? '';
+    final message = error.message.toLowerCase();
     final code = error.code;
 
     log('Database error - Code: $code, Message: ${error.message}',
@@ -196,6 +218,12 @@ abstract class NetworkExceptions {
       return 'Requested data could not be found.';
     }
 
+    if (code == 'PGRST204' ||
+        message.contains('could not find') ||
+        message.contains('column')) {
+      return 'Database schema error. Please ensure your database structure is up to date.';
+    }
+
     if (code == '42P01' || message.contains('does not exist')) {
       return 'Database table does not exist. Please ensure your database schema is set up correctly.';
     }
@@ -213,14 +241,14 @@ abstract class NetworkExceptions {
     }
 
     // Return the actual database error message
-    return error.message?.isNotEmpty == true
-        ? error.message!
+    return error.message.isNotEmpty == true
+        ? error.message
         : 'Database operation failed. Please try again.';
   }
 
   /// Maps Supabase StorageException to user-friendly messages
   static String _getStorageErrorMessage(StorageException error) {
-    final message = error.message?.toLowerCase() ?? '';
+    final message = error.message.toLowerCase();
     final statusCode = error.statusCode;
 
     log('Storage error - Code: $statusCode, Message: ${error.message}',
@@ -247,8 +275,8 @@ abstract class NetworkExceptions {
     }
 
     // Return the actual storage error message
-    return error.message?.isNotEmpty == true
-        ? error.message!
+    return error.message.isNotEmpty == true
+        ? error.message
         : 'Storage operation failed. Please try again.';
   }
 

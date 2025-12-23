@@ -6,6 +6,7 @@ import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart'
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_state.dart';
+import 'package:park_my_whip_residents/src/core/services/password_recovery_manager.dart';
 
 class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
   ForgotPasswordCubit({
@@ -200,6 +201,10 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
         newPassword: passwordController.text.trim(),
       );
       log('Password updated successfully', name: 'ForgotPasswordCubit');
+
+      // Clear recovery mode flag so user stays logged in with new password
+      await PasswordRecoveryManager.setRecoveryMode(false);
+
       emit(state.copyWith(isLoading: false));
 
       // Navigate to success page

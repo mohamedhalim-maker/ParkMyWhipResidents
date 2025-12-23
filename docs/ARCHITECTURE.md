@@ -142,65 +142,74 @@ mixin EmailSignInManager on AuthManager {
 class SupabaseAuthManager extends AuthManager with EmailSignInManager { ... }
 ```
 
-### 5. Deep Link Handling with Splash Gate Pattern
+### 5. Deep Link Handling (Supabase Native Pattern)
 
-The app uses a **Splash Gate** pattern to handle deep links without the "white flash" issue that occurs when deep links are processed asynchronously after the initial route renders.
+The app uses the **Official Supabase Pattern** combined with a **Deep Link Error Interceptor**.
 
-**Problem solved**: When a user taps a deep link (e.g., password reset), the app would briefly show the default route before navigating to the correct destination.
+**Problem solved**:
+1. Supabase automatically handles valid deep links but doesn't always trigger events for expired/invalid links.
+2. Flutter tries to navigate to deep link paths (e.g., `/?code=...`) which don't exist as routes.
 
-**Solution**: The app starts with `SplashPage` as the initial route, which waits for deep link resolution before navigating.
+**Solution**:
+1. **DeepLinkErrorHandler**: Intercepts links *first* to catch errors (expired tokens) and show the error page.
+2. **AppRouter**: Shows a loading indicator for deep link paths (`code=`, `token=`) while Supabase processes them in the background.
+3. **Auth Listener**: Reacts to successful `PASSWORD_RECOVERY` events to show the reset password page.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    DEEP LINK FLOW                           │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  App Launch ──► SplashPage (loading state)                  │
-│                     │                                       │
-│                     ▼                                       │
-│         DeepLinkService.waitForDeepLinkResolution()         │
-│                     │                                       │
-│         ┌─────────────────────────────┐                     │
-│         │                             │                     │
-│         ▼                             ▼                     │
-│   Deep Link Found?              No Deep Link                │
-│         │                             │                     │
-│         ▼                             ▼                     │
-│   Navigate to target         Check auth state               │
-│   (resetPassword/            │                              │
-│    resetLinkError)     ┌─────────────────┐                  │
-│                        │                 │                  │
-│                        ▼                 ▼                  │
-│                   Logged in?       Not logged in            │
-│                        │                 │                  │
-│                        ▼                 ▼                  │
-│                   Dashboard           Login                 │
+│  User clicks link ──► DeepLinkErrorHandler (Interceptor)    │
+│                               │                             │
+│           ┌───────────────────┴───────────────────┐         │
+│           ▼                                       ▼         │
+│     Error Params?                           No Errors       │
+│   (expired/invalid)                             │           │
+│           │                                     ▼           │
+│           ▼                           Supabase Processes    │
+│   Navigate to                                   │           │
+│   ResetLinkErrorPage                            ▼           │
+│                                       PASSWORD_RECOVERY     │
+│                                             Event           │
+│                                                 │           │
+│                                                 ▼           │
+│                                           Navigate to       │
+│                                         ResetPasswordPage   │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 **Key Components**:
 
-1. **DeepLinkService** (`lib/src/core/services/deep_link_service.dart`):
-   - Uses a `Completer` to signal when deep link processing completes
-   - Handles both initial deep links (app opened via link) and runtime deep links
-   - Detects error parameters (expired/invalid tokens) in URLs
-   - Integrates with Supabase auth state for password recovery
+1. **DeepLinkErrorHandler** (`lib/src/core/services/deep_link_error_handler.dart`):
+   - Initializes in `main.dart`.
+   - Listens to `AppLinks` stream.
+   - Checks for `error`, `error_code`, or `error_description` in URL query/fragment.
+   - Navigates to `RoutesName.resetLinkError` if errors are found.
 
-2. **SplashPage** (`lib/src/features/splash/presentation/pages/splash_page.dart`):
-   - Acts as a gate that waits for deep link resolution
-   - Shows a loading indicator during resolution
-   - Navigates to the appropriate route based on deep link or auth state
+2. **ParkMyWhipResidentApp** (`lib/park_my_whip_resident_app.dart`):
+   - Listens to `SupabaseConfig.auth.onAuthStateChange`.
+   - Handles `AuthChangeEvent.passwordRecovery` by navigating to `RoutesName.resetPassword`.
+
+3. **AppRouter** (`lib/src/core/routes/router.dart`):
+   - Handles "unknown" routes that look like deep links (contain `code=`, `token=`).
+   - Returns a `Scaffold` with `CircularProgressIndicator` to show loading state while Supabase processes the link.
 
 **Error Handling for Deep Links**:
 
 ```dart
 // Deep link with error parameters:
 // parkmywhip-resident://reset-password?error=access_denied&error_code=otp_expired
+// -> Caught by DeepLinkErrorHandler -> ResetLinkErrorPage
 
-// The service detects these errors and navigates to ResetLinkErrorPage
-if (queryError != null || queryErrorCode != null) {
-  _completeDeepLinkProcessing(RoutesName.resetLinkError);
+// The handler detects these errors and navigates to ResetLinkErrorPage
+if (uri.queryParameters.containsKey('error') || 
+    uri.fragment.contains('error=')) {
+  navigatorKey.currentState?.pushNamedAndRemoveUntil(
+    RoutesName.resetLinkError, 
+    (route) => false
+  );
 }
 ```
 
@@ -208,8 +217,15 @@ if (queryError != null || queryErrorCode != null) {
 
 | Type | Scenario | Handling |
 |------|----------|----------|
-| Initial | App opened via deep link | SplashPage waits, then navigates |
-| Runtime | Deep link while app running | Direct navigation via Navigator |
+| Initial | App opened via deep link | `DeepLinkErrorHandler` checks for errors, or Supabase triggers auth event |
+| Runtime | Deep link while app running | Same flow: Interceptor -> Supabase Event |
+
+**Password Recovery Session Management**:
+
+To prevent users from remaining logged in if they abandon the password reset flow (security best practice):
+1. **Flagging**: When `PASSWORD_RECOVERY` event occurs, a flag `SharedPrefStrings.isRecoveryMode` is set in `SharedPreferences`.
+2. **Clearing**: When the password is successfully updated, the flag is cleared.
+3. **Enforcement**: On app launch (`main.dart`), if `SharedPrefStrings.isRecoveryMode` is true, the user is signed out immediately.
 
 ## Project Structure
 

@@ -15,78 +15,82 @@ class EnterOtpCodePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w),
-          child: BlocBuilder<SignupCubit, SignupState>(
-            builder: (context, state) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  verticalSpace(50),
-                  Text(
-                    AuthStrings.otpTitle,
-                    style: AppTextStyles.urbanistFont34Grey800SemiBold1_2,
-                  ),
-                  verticalSpace(8),
-                  Text(
-                    AuthStrings.otpSubtitle,
-                    style: AppTextStyles.urbanistFont15LightGrayRegular1_33,
-                  ),
-                  verticalSpace(24),
-                  OtpWidget(
-                    errorMessage: state.otpError,
-                    onChanged: (text) {
-                      context.read<SignupCubit>().onOtpFieldChanged(text: text);
-                    },
-                  ),
-                  const Spacer(),
-                  // Resend button or countdown
-                  Center(
-                    child: state.canResendOtp
-                        ? TextButton(
-                            onPressed: state.isLoading
-                                ? null
-                                : () => context
-                                    .read<SignupCubit>()
-                                    .resendOtp(context: context),
-                            child: state.isLoading
-                                ? SizedBox(
-                                    width: 16.w,
-                                    height: 16.h,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColor.richRed,
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        body: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            child: BlocBuilder<SignupCubit, SignupState>(
+              builder: (context, state) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    verticalSpace(50),
+                    Text(
+                      AuthStrings.otpTitle,
+                      style: AppTextStyles.urbanistFont34Grey800SemiBold1_2,
+                    ),
+                    verticalSpace(8),
+                    Text(
+                      AuthStrings.otpSubtitle,
+                      style: AppTextStyles.urbanistFont15LightGrayRegular1_33,
+                    ),
+                    verticalSpace(24),
+                    OtpWidget(
+                      controller: context.read<SignupCubit>().otpController,
+                      errorMessage: state.otpError,
+                      onChanged: () {
+                        context.read<SignupCubit>().onOtpFieldChanged();
+                      },
+                    ),
+                    const Spacer(),
+                    // Resend button or countdown
+                    Center(
+                      child: state.canResendOtp
+                          ? TextButton(
+                              onPressed: state.isLoading
+                                  ? null
+                                  : () => context
+                                      .read<SignupCubit>()
+                                      .resendOtp(context: context),
+                              child: state.isLoading
+                                  ? SizedBox(
+                                      width: 16.w,
+                                      height: 16.h,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColor.richRed,
+                                      ),
+                                    )
+                                  : Text(
+                                      AuthStrings.resend,
+                                      style: AppTextStyles
+                                          .urbanistFont16RichRedSemiBold1_2,
                                     ),
-                                  )
-                                : Text(
-                                    AuthStrings.resend,
-                                    style: AppTextStyles
-                                        .urbanistFont16RichRedSemiBold1_2,
-                                  ),
-                          )
-                        : Text(
-                            '${AuthStrings.resendIn} ${SignupCubit.formatCountdownTime(state.otpResendCountdownSeconds)}',
-                            style:
-                                AppTextStyles.urbanistFont16RichRedSemiBold1_2,
-                          ),
-                  ),
-                  verticalSpace(12),
-                  CommonButton(
-                    text: state.isLoading
-                        ? 'Verifying...'
-                        : AuthStrings.continueText,
-                    onPressed: () {
-                      context.read<SignupCubit>().verifyOtp(context: context);
-                    },
-                    isEnabled: state.isOtpButtonEnabled && !state.isLoading,
-                  ),
-                  verticalSpace(16),
-                ],
-              );
-            },
+                            )
+                          : Text(
+                              '${AuthStrings.resendIn} ${SignupCubit.formatCountdownTime(state.otpResendCountdownSeconds)}',
+                              style: AppTextStyles
+                                  .urbanistFont16RichRedSemiBold1_2,
+                            ),
+                    ),
+                    verticalSpace(12),
+                    CommonButton(
+                      text: state.isLoading
+                          ? 'Verifying...'
+                          : AuthStrings.continueText,
+                      onPressed: () {
+                        context.read<SignupCubit>().verifyOtp(context: context);
+                      },
+                      isEnabled: state.isOtpButtonEnabled && !state.isLoading,
+                    ),
+                    verticalSpace(16),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
