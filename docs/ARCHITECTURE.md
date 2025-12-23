@@ -310,14 +310,47 @@ User Action → Page → Cubit → Service/AuthManager → Supabase
 
 **Example: Login Flow**
 
-1. User taps "Login" button
-2. `LoginPage` calls `context.read<LoginCubit>().signIn()`
-3. `LoginCubit` validates input, emits `isLoading: true`
-4. `LoginCubit` calls `authManager.signInWithEmail()`
-5. `SupabaseAuthManager` calls Supabase Auth API
-6. On success: Cache user, return User object
-7. `LoginCubit` emits success state
-8. `BlocConsumer.listener` navigates to Dashboard
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     LOGIN FLOW                               │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  LoginPage (enter email & password)                          │
+│       │                                                     │
+│       ▼                                                     │
+│  validateLoginForm() ──► Check email/password format         │
+│       │                                                     │
+│       ├─── Invalid ──► Show field errors                    │
+│       │                                                     │
+│       ▼                                                     │
+│  checkUserAppAccess(email, appId) ──► RPC call              │
+│       │                                                     │
+│       ├─── user: null ──► "Account not found"               │
+│       │                                                     │
+│       ├─── user_app: null ──► "Not registered for this app" │
+│       │                                                     │
+│       ▼                                                     │
+│  signInWithEmail(email, password)                           │
+│       │                                                     │
+│       ├─── Success ──► Cache user ──► Dashboard             │
+│       │                                                     │
+│       └─── Error ──► Show error message                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Components**:
+1. **LoginCubit** manages form validation and login state
+2. **UserProfileRepository.checkUserAppAccess()** calls RPC `get_user_by_email_with_app_check`
+3. **RPC Response** returns `{user: {...}, user_app: {...}}` for valid access
+4. **NetworkExceptions** handles all Supabase errors centrally
+
+**RPC Response Scenarios**:
+| `user` | `user_app` | Action |
+|--------|------------|--------|
+| `null` | `null` | Error: "Account not found" |
+| `exists` | `null` | Error: "Not registered for this app" |
+| `exists` | `exists` | Proceed to `signInWithEmail()` |
 
 **Example: Signup with OTP Verification Flow**
 

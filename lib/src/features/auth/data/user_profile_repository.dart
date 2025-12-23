@@ -110,4 +110,33 @@ class UserProfileRepository {
     final data = await getUserProfileData(userId);
     return data != null;
   }
+
+  /// Checks if a user with the given email exists and is registered for the specified app
+  /// Uses RPC function to bypass RLS
+  ///
+  /// Returns:
+  /// - `null` if user doesn't exist
+  /// - `{'user': {...}, 'user_app': null}` if user exists but NOT registered for this app
+  /// - `{'user': {...}, 'user_app': {...}}` if user is registered for this app ✅
+  Future<Map<String, dynamic>?> checkUserAppAccess({
+    required String email,
+    required String appId,
+  }) async {
+    try {
+      final result = await SupabaseConfig.client.rpc(
+        'get_user_by_email_with_app_check',
+        params: {
+          'user_email': email,
+          'p_app_id': appId,
+        },
+      );
+
+      if (result == null) return null;
+      return Map<String, dynamic>.from(result as Map);
+    } catch (e) {
+      log('Failed to check user app access: $e',
+          name: AuthConstants.loggerName, error: e);
+      rethrow; // Let the caller handle via NetworkExceptions
+    }
+  }
 }
