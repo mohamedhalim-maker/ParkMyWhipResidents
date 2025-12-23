@@ -302,3 +302,38 @@ User Action → Page → Cubit → Service/AuthManager → Supabase
 6. On success: Cache user, return User object
 7. `LoginCubit` emits success state
 8. `BlocConsumer.listener` navigates to Dashboard
+
+**Example: Signup with OTP Verification Flow**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   SIGNUP OTP FLOW                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  SignupPage (enter email)                                   │
+│       │                                                     │
+│       ▼                                                     │
+│  SetPasswordPage (create password)                          │
+│       │                                                     │
+│       ▼                                                     │
+│  createAccountWithEmail() ──► Supabase auto-sends OTP       │
+│       │                                                     │
+│       ▼                                                     │
+│  EnterOtpCodePage (user enters 6-digit code)                │
+│       │                                                     │
+│       ▼                                                     │
+│  verifyOtpWithEmail(email, otp)                             │
+│       │                                                     │
+│       ├─── Success ──► User auto-logged in ──► Dashboard    │
+│       │                                                     │
+│       └─── Error ──► Show error, allow resend               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Key components:
+1. **SignupCubit** manages the entire signup flow including OTP verification
+2. **Supabase** automatically sends 6-digit OTP on `signUp()` call
+3. **verifyOTP** with `OtpType.signup` verifies the code and returns a session
+4. User is auto-logged in after successful OTP verification
+5. Resend OTP uses `signInWithOtp()` method with 60-second cooldown

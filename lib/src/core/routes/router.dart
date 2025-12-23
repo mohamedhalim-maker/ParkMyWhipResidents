@@ -9,6 +9,7 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/pages/logi
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/signup_pages/signup_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/signup_pages/verify_email_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/signup_pages/set_password_page.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/pages/signup_pages/enter_otp_code_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/forgot_password_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/reset_link_sent_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/reset_link_error_page.dart';
@@ -69,6 +70,14 @@ class AppRouter {
           builder: (_) => BlocProvider.value(
             value: getIt<SignupCubit>(),
             child: const SetPasswordPage(),
+          ),
+        );
+
+      case RoutesName.enterOtpCode:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<SignupCubit>(),
+            child: const EnterOtpCodePage(),
           ),
         );
 

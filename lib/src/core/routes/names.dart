@@ -5,6 +5,7 @@ class RoutesName {
   static const signup = '/signup';
   static const verifyEmail = '/verify-email';
   static const setPassword = '/set-password';
+  static const enterOtpCode = '/enter-otp-code';
   static const dashboard = '/dashboard';
 
   // Auth routes - forgot password flow

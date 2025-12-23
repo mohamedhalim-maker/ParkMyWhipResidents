@@ -35,6 +35,12 @@ mixin EmailSignInManager on AuthManager {
   );
 
   Future<void> resendVerificationEmail({required String email});
+
+  /// Verify OTP code sent to email during signup
+  Future<User?> verifyOtpWithEmail({
+    required String email,
+    required String otpCode,
+  });
 }
 
 // Anonymous authentication for guest users

@@ -20,6 +20,14 @@ class SignupState extends Equatable {
   final bool isPasswordButtonEnabled;
   final int passwordFieldTrigger;
 
+  // OTP verification step
+  final String otpCode;
+  final String? otpError;
+  final bool isOtpButtonEnabled;
+  final bool canResendOtp;
+  final int otpResendCountdownSeconds;
+  final bool isOtpVerificationSuccess;
+
   const SignupState({
     this.isLoading = false,
     this.emailError,
@@ -33,6 +41,12 @@ class SignupState extends Equatable {
     this.generalError,
     this.isPasswordButtonEnabled = false,
     this.passwordFieldTrigger = 0,
+    this.otpCode = '',
+    this.otpError,
+    this.isOtpButtonEnabled = false,
+    this.canResendOtp = false,
+    this.otpResendCountdownSeconds = 60,
+    this.isOtpVerificationSuccess = false,
   });
 
   SignupState copyWith({
@@ -48,6 +62,12 @@ class SignupState extends Equatable {
     String? generalError,
     bool? isPasswordButtonEnabled,
     int? passwordFieldTrigger,
+    String? otpCode,
+    String? otpError,
+    bool? isOtpButtonEnabled,
+    bool? canResendOtp,
+    int? otpResendCountdownSeconds,
+    bool? isOtpVerificationSuccess,
   }) =>
       SignupState(
         isLoading: isLoading ?? this.isLoading,
@@ -64,6 +84,14 @@ class SignupState extends Equatable {
         isPasswordButtonEnabled:
             isPasswordButtonEnabled ?? this.isPasswordButtonEnabled,
         passwordFieldTrigger: passwordFieldTrigger ?? this.passwordFieldTrigger,
+        otpCode: otpCode ?? this.otpCode,
+        otpError: otpError,
+        isOtpButtonEnabled: isOtpButtonEnabled ?? this.isOtpButtonEnabled,
+        canResendOtp: canResendOtp ?? this.canResendOtp,
+        otpResendCountdownSeconds:
+            otpResendCountdownSeconds ?? this.otpResendCountdownSeconds,
+        isOtpVerificationSuccess:
+            isOtpVerificationSuccess ?? this.isOtpVerificationSuccess,
       );
 
   @override
@@ -80,5 +108,11 @@ class SignupState extends Equatable {
         generalError,
         isPasswordButtonEnabled,
         passwordFieldTrigger,
+        otpCode,
+        otpError,
+        isOtpButtonEnabled,
+        canResendOtp,
+        otpResendCountdownSeconds,
+        isOtpVerificationSuccess,
       ];
 }

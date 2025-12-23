@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
 import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
@@ -26,6 +26,9 @@ class SignupCubit extends Cubit<SignupState> {
 
   // Timer for resend email countdown
   Timer? _resendTimer;
+
+  // Timer for resend OTP countdown
+  Timer? _otpResendTimer;
 
   // Called when signup email field changes
   void onEmailFieldChanged() {
@@ -54,7 +57,7 @@ class SignupCubit extends Cubit<SignupState> {
       emailError: null,
     ));
 
-    log('Signup email saved: ${state.signupEmail}', name: 'SignupCubit');
+    AppLogger.auth('Signup email saved: ${state.signupEmail}');
 
     // Navigate to set password page
     if (context.mounted) {
@@ -100,20 +103,19 @@ class SignupCubit extends Cubit<SignupState> {
     try {
       emit(state.copyWith(isLoading: true, emailError: null));
 
-      log('Resending verification email to ${state.signupEmail}',
-          name: 'SignupCubit');
+      AppLogger.auth('Resending verification email to ${state.signupEmail}');
 
       await (authManager as EmailSignInManager)
           .resendVerificationEmail(email: state.signupEmail!);
 
-      log('Verification email resent successfully', name: 'SignupCubit');
+      AppLogger.auth('Verification email resent successfully');
 
       emit(state.copyWith(isLoading: false));
 
       // Restart countdown
       startResendCountdown();
     } catch (e) {
-      log('Resend verification error: $e', name: 'SignupCubit', level: 900);
+      AppLogger.error('Resend verification error', error: e);
       final errorMessage = e.toString().replaceFirst('Exception: ', '');
       emit(state.copyWith(
         isLoading: false,
@@ -175,28 +177,29 @@ class SignupCubit extends Cubit<SignupState> {
       return;
     }
 
-    // Call auth manager to create account and send verification email
+    // Call auth manager to create account (Supabase auto-sends OTP)
     try {
       emit(state.copyWith(isLoading: true, generalError: null));
 
-      log('Creating account for: ${state.signupEmail}', name: 'SignupCubit');
+      AppLogger.auth('Creating account for: ${state.signupEmail}');
 
       await (authManager as EmailSignInManager).createAccountWithEmail(
         state.signupEmail!,
         passwordController.text.trim(),
       );
 
-      log('Account created successfully. Verification email sent.',
-          name: 'SignupCubit');
+      AppLogger.auth('Account created successfully. OTP sent automatically.');
 
       emit(state.copyWith(isLoading: false));
 
-      // Navigate to verify email page
+      // Navigate to OTP code page
       if (context.mounted) {
-        Navigator.of(context).pushNamed(RoutesName.verifyEmail);
+        Navigator.of(context).pushNamed(RoutesName.enterOtpCode);
+        // Start OTP resend countdown
+        startOtpResendCountdown();
       }
     } catch (e) {
-      log('Error creating account: $e', name: 'SignupCubit', level: 900);
+      AppLogger.error('Error creating account', error: e);
       final errorMessage = e.toString().replaceFirst('Exception: ', '');
       emit(state.copyWith(
         isLoading: false,
@@ -207,9 +210,119 @@ class SignupCubit extends Cubit<SignupState> {
     }
   }
 
+  // =========== OTP Verification Methods ===========
+
+  // Called when OTP field changes
+  void onOtpFieldChanged({required String text}) {
+    emit(state.copyWith(
+      otpCode: text,
+      otpError: null,
+      isOtpButtonEnabled: text.length == 6,
+    ));
+  }
+
+  // Start countdown timer for resend OTP
+  void startOtpResendCountdown() {
+    _otpResendTimer?.cancel();
+    emit(state.copyWith(
+      canResendOtp: false,
+      otpResendCountdownSeconds: 60,
+    ));
+
+    _otpResendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (state.otpResendCountdownSeconds > 1) {
+        emit(state.copyWith(
+            otpResendCountdownSeconds: state.otpResendCountdownSeconds - 1));
+      } else {
+        timer.cancel();
+        emit(state.copyWith(
+          canResendOtp: true,
+          otpResendCountdownSeconds: 0,
+        ));
+      }
+    });
+  }
+
+  // Resend OTP code
+  Future<void> resendOtp({required BuildContext context}) async {
+    if (state.isLoading || !state.canResendOtp) return;
+
+    try {
+      emit(state.copyWith(isLoading: true, otpError: null));
+
+      AppLogger.auth('Resending OTP to ${state.signupEmail}');
+
+      await (authManager as EmailSignInManager)
+          .resendVerificationEmail(email: state.signupEmail!);
+
+      AppLogger.auth('OTP resent successfully');
+
+      emit(state.copyWith(isLoading: false));
+
+      // Restart countdown
+      startOtpResendCountdown();
+    } catch (e) {
+      AppLogger.error('Resend OTP error', error: e);
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(
+        isLoading: false,
+        otpError: errorMessage.isEmpty ? 'Failed to resend OTP' : errorMessage,
+      ));
+    }
+  }
+
+  // Verify OTP code and navigate to dashboard on success
+  Future<void> verifyOtp({required BuildContext context}) async {
+    if (state.isLoading || state.otpCode.length != 6) return;
+
+    try {
+      emit(state.copyWith(isLoading: true, otpError: null));
+
+      AppLogger.auth('Verifying OTP for ${state.signupEmail}');
+
+      final user = await (authManager as EmailSignInManager).verifyOtpWithEmail(
+        email: state.signupEmail!,
+        otpCode: state.otpCode,
+      );
+
+      if (user != null) {
+        AppLogger.auth('OTP verified successfully. User logged in.');
+
+        emit(state.copyWith(
+          isLoading: false,
+          isOtpVerificationSuccess: true,
+        ));
+
+        // Navigate to dashboard
+        if (context.mounted) {
+          AppLogger.navigation('Navigating to dashboard after OTP verification');
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            RoutesName.dashboard,
+            (route) => false,
+          );
+        }
+      } else {
+        emit(state.copyWith(
+          isLoading: false,
+          otpError: 'Verification failed. Please try again.',
+        ));
+      }
+    } catch (e) {
+      AppLogger.error('OTP verification error', error: e);
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      emit(state.copyWith(
+        isLoading: false,
+        otpError: errorMessage.isEmpty
+            ? 'Invalid OTP code. Please try again.'
+            : errorMessage,
+      ));
+    }
+  }
+
   @override
   Future<void> close() {
     _resendTimer?.cancel();
+    _otpResendTimer?.cancel();
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();

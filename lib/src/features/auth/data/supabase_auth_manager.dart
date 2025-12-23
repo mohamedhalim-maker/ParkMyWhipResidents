@@ -136,6 +136,64 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
   }
 
   @override
+  Future<User?> verifyOtpWithEmail({
+    required String email,
+    required String otpCode,
+  }) async {
+    try {
+      log('Verifying OTP for email: $email', name: AuthConstants.loggerName);
+
+      final response = await SupabaseConfig.auth.verifyOTP(
+        email: email,
+        token: otpCode,
+        type: sb.OtpType.signup,
+      );
+
+      if (response.user == null) {
+        log('OTP verification failed: No user returned',
+            name: AuthConstants.loggerName);
+        throw Exception('OTP verification failed. Please try again.');
+      }
+
+      log('OTP verified successfully for: $email',
+          name: AuthConstants.loggerName);
+
+      final userId = response.user!.id;
+
+      // Ensure user profile exists (creates if missing)
+      final user = await _getUserWithProfile(userId);
+
+      // Ensure app registration exists (creates if missing)
+      final userApp = await _ensureUserAppRegistration(userId);
+
+      // Validate app access status
+      if (!userApp.isActive) {
+        log('User is deactivated for app: ${AppConfig.appId}',
+            name: AuthConstants.loggerName);
+        await SupabaseConfig.auth.signOut();
+        throw Exception(
+          'Your account has been deactivated. Please contact support.',
+        );
+      }
+
+      // Update user with app registration and cache
+      final userWithApp = user.copyWith(userApp: userApp);
+      await _cacheService.cacheUser(userWithApp);
+
+      return userWithApp;
+    } on sb.AuthException catch (e) {
+      log('Auth error during OTP verification: ${e.message}',
+          name: AuthConstants.loggerName, error: e);
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+    } catch (e) {
+      log('Error during OTP verification: $e',
+          name: AuthConstants.loggerName, error: e);
+      if (e is Exception) rethrow;
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+    }
+  }
+
+  @override
   Future<void> signOut() async {
     try {
       await SupabaseConfig.auth.signOut();
