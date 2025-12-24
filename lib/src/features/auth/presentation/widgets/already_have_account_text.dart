@@ -1,7 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:park_my_whip_residents/src/core/config/injection.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/signup/signup_cubit.dart';
 
 class AlreadyHaveAccountText extends StatelessWidget {
   const AlreadyHaveAccountText({super.key});
@@ -17,7 +19,8 @@ class AlreadyHaveAccountText extends StatelessWidget {
             text: AuthStrings.logIn,
             style: AppTextStyles.urbanistFont16RichRedSemiBold1_2,
             recognizer: TapGestureRecognizer()
-              ..onTap = () => Navigator.pop(context),
+              ..onTap = () =>
+                  getIt<SignupCubit>().navigateBackToLogin(context: context),
           ),
         ],
       ),

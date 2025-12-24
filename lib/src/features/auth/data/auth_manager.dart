@@ -10,6 +10,29 @@
 
 import 'package:park_my_whip_residents/src/core/models/user_model.dart';
 
+/// Signup eligibility status for cross-app user detection
+enum SignupEligibilityStatus {
+  /// User doesn't exist - can proceed with normal signup
+  newUser,
+
+  /// User exists in another app - should redirect to login
+  existingUser,
+}
+
+/// Result of signup eligibility check
+class SignupEligibilityResult {
+  final SignupEligibilityStatus status;
+  final String? message;
+
+  const SignupEligibilityResult({
+    required this.status,
+    this.message,
+  });
+
+  bool get isNewUser => status == SignupEligibilityStatus.newUser;
+  bool get isExistingUser => status == SignupEligibilityStatus.existingUser;
+}
+
 // Core authentication operations that all auth implementations must provide
 abstract class AuthManager {
   Future<void> signOut();
@@ -41,6 +64,10 @@ mixin EmailSignInManager on AuthManager {
     required String email,
     required String otpCode,
   });
+
+  /// Check if user can sign up or if they should be redirected to login
+  /// Used during signup flow to handle cross-app users
+  Future<SignupEligibilityResult> checkSignupEligibility(String email);
 }
 
 // Anonymous authentication for guest users

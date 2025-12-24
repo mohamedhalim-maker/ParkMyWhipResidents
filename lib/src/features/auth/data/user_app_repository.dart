@@ -2,7 +2,6 @@ import 'dart:developer';
 import 'package:park_my_whip_residents/src/core/models/user_app_model.dart';
 import 'package:park_my_whip_residents/src/features/auth/data/auth_constants.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 /// Repository for managing user app registrations
 /// Handles all CRUD operations for the user_apps table
@@ -28,60 +27,6 @@ class UserAppRepository {
       log('Failed to fetch user app registration: $e',
           name: AuthConstants.loggerName, error: e);
       return null;
-    }
-  }
-
-  /// Registers a user for an app
-  Future<UserApp> registerUserForApp({
-    required String userId,
-    required String appId,
-    String? role,
-  }) async {
-    final now = DateTime.now().toIso8601String();
-    final data = {
-      'user_id': userId,
-      'app_id': appId,
-      'role': role ?? AuthConstants.defaultUserRole,
-      'is_active': true,
-      'metadata': {},
-      'created_at': now,
-      'updated_at': now,
-    };
-
-    final result = await SupabaseConfig.client
-        .from(AuthConstants.userAppsTable)
-        .insert(data)
-        .select()
-        .single();
-
-    log('User registered for app successfully', name: AuthConstants.loggerName);
-    return UserApp.fromJson(result);
-  }
-
-  /// Registers a user for an app, handling duplicate registration gracefully
-  Future<UserApp> registerUserForAppSafe({
-    required String userId,
-    required String appId,
-    String? role,
-  }) async {
-    try {
-      return await registerUserForApp(
-        userId: userId,
-        appId: appId,
-        role: role,
-      );
-    } on PostgrestException catch (e) {
-      // Check if user is already registered (duplicate key violation)
-      if (e.code == '23505') {
-        log('User already registered for app, fetching existing registration',
-            name: AuthConstants.loggerName);
-        final existingRegistration =
-            await getUserAppRegistration(userId, appId);
-        if (existingRegistration != null) {
-          return existingRegistration;
-        }
-      }
-      rethrow;
     }
   }
 
@@ -125,11 +70,5 @@ class UserAppRepository {
           name: AuthConstants.loggerName, error: e);
       return false;
     }
-  }
-
-  /// Checks if user is registered and active for an app
-  Future<bool> isUserActiveInApp(String userId, String appId) async {
-    final registration = await getUserAppRegistration(userId, appId);
-    return registration?.isActive ?? false;
   }
 }

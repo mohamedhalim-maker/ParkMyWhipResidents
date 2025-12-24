@@ -40,12 +40,9 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       log('Checking user app access for: $email',
           name: AuthConstants.loggerName);
 
-      final appAccessResult = await SupabaseConfig.client.rpc(
-        'get_user_by_email_with_app_check',
-        params: {
-          'user_email': email,
-          'p_app_id': AppConfig.appId,
-        },
+      final appAccessResult = await _userProfileRepository.checkUserAppAccess(
+        email: email,
+        appId: AppConfig.appId,
       );
 
       if (appAccessResult == null) {
@@ -56,7 +53,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         );
       }
 
-      final data = Map<String, dynamic>.from(appAccessResult as Map);
+      final data = appAccessResult;
       final userData = data['user'] as Map<String, dynamic>?;
       final userAppData = data['user_app'] as Map<String, dynamic>?;
 
@@ -74,7 +71,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         log('User not registered for app: ${AppConfig.appId}',
             name: AuthConstants.loggerName);
         throw Exception(
-          'Your account is not registered for this app. Please contact support.',
+          'Your account is not registered for this app. Try signing up.',
         );
       }
 
@@ -162,11 +159,6 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       log('Account created successfully. User ID: $userId',
           name: AuthConstants.loggerName);
 
-      // Send verification email
-      // Note: User profile and app registration will be created on first login
-      // after email confirmation
-      // await _sendVerificationEmail(email);
-
       return _userFromAuthUser(signUpResponse.user!, userApp: null);
     } on sb.AuthException catch (e) {
       log('Auth error during account creation: ${e.message}',
@@ -187,6 +179,43 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
   @override
   Future<void> resendVerificationEmail({required String email}) async {
     await _sendVerificationEmail(email);
+  }
+
+  @override
+  Future<SignupEligibilityResult> checkSignupEligibility(String email) async {
+    try {
+      log('Checking signup eligibility for: $email',
+          name: AuthConstants.loggerName);
+
+      // Check if user exists and grant app access if needed
+      final result = await _userProfileRepository.checkUserAndGrantAppAccess(
+        email: email,
+        appId: AppConfig.appId,
+      );
+
+      final data = result ?? {};
+
+      // If user_app exists, user was granted access (existing user in another app)
+      if (data['user_app'] != null) {
+        log('Cross-app user detected for: $email',
+            name: AuthConstants.loggerName);
+        return const SignupEligibilityResult(
+          status: SignupEligibilityStatus.existingUser,
+          message: 'This account now exists. Please sign in to access this app.',
+        );
+      }
+
+      // New user - can proceed with signup
+      log('New user detected for: $email', name: AuthConstants.loggerName);
+      return const SignupEligibilityResult(
+        status: SignupEligibilityStatus.newUser,
+      );
+    } catch (e) {
+      log('Error checking signup eligibility: $e',
+          name: AuthConstants.loggerName, error: e);
+      if (e is Exception) rethrow;
+      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+    }
   }
 
   @override
@@ -215,17 +244,14 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       final userId = response.user!.id;
 
-      // Step 2: Create user profile and app registration using RPC
+      // Step 2: Create user profile and app registration using repository
       log('Creating user profile and app registration via RPC',
           name: AuthConstants.loggerName);
 
-      final rpcResult = await SupabaseConfig.client.rpc(
-        'create_user_profile_on_first_login',
-        params: {
-          'p_user_id': userId,
-          'p_email': email,
-          'p_app_id': AppConfig.appId,
-        },
+      final rpcResult = await _userProfileRepository.createUserProfileWithApp(
+        userId: userId,
+        email: email,
+        appId: AppConfig.appId,
       );
 
       if (rpcResult == null) {
@@ -238,7 +264,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
           name: AuthConstants.loggerName);
 
       // Step 3: Parse RPC response
-      final data = Map<String, dynamic>.from(rpcResult as Map);
+      final data = rpcResult;
       final userData = data['user'] as Map<String, dynamic>?;
       final userAppData = data['user_app'] as Map<String, dynamic>?;
 
@@ -319,7 +345,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       if (!hasOtherApps) {
         await _userProfileRepository.deleteUserProfile(userId);
-        await SupabaseConfig.client.rpc('delete_user');
+        await _userProfileRepository.deleteAuthUser();
       }
 
       await _cacheService.clearCache();
@@ -358,13 +384,10 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       log('Starting password reset validation for: $email',
           name: AuthConstants.loggerName);
 
-      // Get user and app data in one query using RPC function
-      final result = await SupabaseConfig.client.rpc(
-        'get_user_by_email_with_app_check',
-        params: {
-          'user_email': email,
-          'p_app_id': AppConfig.appId,
-        },
+      // Get user and app data in one query using repository
+      final result = await _userProfileRepository.checkUserAppAccess(
+        email: email,
+        appId: AppConfig.appId,
       );
 
       if (result == null) {
@@ -375,7 +398,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         );
       }
 
-      final data = Map<String, dynamic>.from(result as Map);
+      final data = result;
       final userData = data['user'] as Map<String, dynamic>?;
       final userAppData = data['user_app'] as Map<String, dynamic>?;
 
@@ -494,63 +517,6 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
   }
 
   // Private helper methods
-
-  /// Ensures user app registration exists, creates if missing
-  Future<UserApp> _ensureUserAppRegistration(String userId) async {
-    // Try to get existing registration
-    var userApp = await _userAppRepository.getUserAppRegistration(
-      userId,
-      AppConfig.appId,
-    );
-
-    // If doesn't exist, create it
-    if (userApp == null) {
-      log('App registration not found, creating new registration',
-          name: AuthConstants.loggerName);
-      userApp = await _userAppRepository.registerUserForApp(
-        userId: userId,
-        appId: AppConfig.appId,
-      );
-    }
-
-    return userApp;
-  }
-
-  /// Gets user with profile, creating it if it doesn't exist
-  Future<User> _getUserWithProfile(String userId, {UserApp? userApp}) async {
-    // Try to fetch existing profile
-    var user =
-        await _userProfileRepository.getUserProfile(userId, userApp: userApp);
-
-    if (user != null) {
-      return user;
-    }
-
-    // Profile doesn't exist, create it
-    log('User profile not found, creating new record',
-        name: AuthConstants.loggerName);
-
-    final authUser = SupabaseConfig.auth.currentUser;
-    if (authUser != null) {
-      await _userProfileRepository.createUserProfile(
-        userId: userId,
-        email: authUser.email ?? '',
-      );
-
-      // Fetch the newly created user
-      user =
-          await _userProfileRepository.getUserProfile(userId, userApp: userApp);
-      if (user != null) {
-        return user;
-      }
-    }
-
-    // Fallback: return basic user from auth
-    return _userFromAuthUser(
-      SupabaseConfig.auth.currentUser!,
-      userApp: userApp,
-    );
-  }
 
   /// Sends verification email to user
   Future<void> _sendVerificationEmail(String email) async {

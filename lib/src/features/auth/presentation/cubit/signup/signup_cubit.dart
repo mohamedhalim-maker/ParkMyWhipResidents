@@ -2,14 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:park_my_whip_residents/src/core/config/injection.dart';
-import 'package:park_my_whip_residents/src/core/constants/app_config.dart';
 import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
 import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_cubit.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/signup/signup_state.dart';
-import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class SignupCubit extends Cubit<SignupState> {
   SignupCubit({
@@ -63,43 +61,21 @@ class SignupCubit extends Cubit<SignupState> {
     emit(state.copyWith(isLoading: true, emailError: null));
 
     try {
-      // Check if user exists and grant app access if needed
-      AppLogger.auth('Checking user status for email: $email, appId: ${AppConfig.appId}');
+      // Check if user can sign up or should be redirected to login
+      final result = await (authManager as EmailSignInManager)
+          .checkSignupEligibility(email);
 
-      final result = await SupabaseConfig.client.rpc(
-        'check_user_and_grant_app_access',
-        params: {
-          'user_email': email,
-          'p_app_id': AppConfig.appId,
-        },
-      );
-
-      AppLogger.auth('RPC result: $result (type: ${result.runtimeType})');
-
-      final data = Map<String, dynamic>.from(result as Map);
-      final status = data['status'] as String;
-
-      AppLogger.auth('User check result - Status: $status');
-
-      if (status == 'exists_this_app') {
-        AppLogger.auth('User already exists for THIS app - showing error');
-        // User already registered for this app
-        emit(state.copyWith(
-          isLoading: false,
-          emailError: 'This email is already registered. Please sign in.',
-        ));
-        return;
-      }
-
-      if (status == 'granted_access') {
+      if (result.isExistingUser) {
+        // Cross-app user - redirect to login
         AppLogger.auth('Cross-app user detected. Redirecting to login.');
 
         emit(state.copyWith(isLoading: false));
 
-        // Prefill login cubit with email and error message
+        // Prefill login cubit with email and message
         getIt<LoginCubit>().prefillForCrossAppSignup(
           email: email,
-          errorMessage: 'This account exists. Please sign in to access this app.',
+          errorMessage: result.message ?? 
+              'This account now exists. Please sign in to access this app.',
         );
 
         // Navigate to login page
@@ -109,7 +85,7 @@ class SignupCubit extends Cubit<SignupState> {
         return;
       }
 
-      // status == 'new_user' - Continue with normal signup flow
+      // New user - continue with normal signup flow
       AppLogger.auth('New user. Proceeding to password page.');
       emit(state.copyWith(
         isLoading: false,
@@ -122,11 +98,24 @@ class SignupCubit extends Cubit<SignupState> {
         Navigator.of(context).pushNamed(RoutesName.setPassword);
       }
     } catch (e, stackTrace) {
-      AppLogger.error('Error checking user status', error: e, stackTrace: stackTrace);
+      AppLogger.error('Error checking user status',
+          error: e, stackTrace: stackTrace);
       emit(state.copyWith(
         isLoading: false,
         emailError: 'Failed to verify email. Please try again.',
       ));
+    }
+  }
+
+  // navigate back to login page and clear email field
+  void navigateBackToLogin({required BuildContext context}) {
+    emailController.clear();
+    emit(state.copyWith(
+      emailError: null,
+      isEmailButtonEnabled: false,
+    ));
+    if (context.mounted) {
+      Navigator.of(context).pop();
     }
   }
 

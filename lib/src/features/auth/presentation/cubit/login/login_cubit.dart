@@ -79,6 +79,7 @@ class LoginCubit extends Cubit<LoginState> {
         if (context.mounted) {
           Navigator.of(context).pushReplacementNamed(RoutesName.dashboard);
         }
+        resetLoginForm();
       }
     } catch (e) {
       log('Login error: $e', name: 'LoginCubit', level: 900);
@@ -90,6 +91,23 @@ class LoginCubit extends Cubit<LoginState> {
             : errorMessage,
       ));
     }
+  }
+
+  // function to navigate to signup page and clear the login fields
+  void navigateToSignupPage({required BuildContext context}) {
+    emailController.clear();
+    passwordController.clear();
+    emit(const LoginState());
+    if (context.mounted) {
+      Navigator.of(context).pushNamed(RoutesName.signup);
+    }
+  }
+
+  // rest filed of login form
+  void resetLoginForm() {
+    emailController.clear();
+    passwordController.clear();
+    emit(const LoginState());
   }
 
   @override

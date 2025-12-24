@@ -139,4 +139,74 @@ class UserProfileRepository {
       rethrow; // Let the caller handle via NetworkExceptions
     }
   }
+
+  /// Creates user profile and app registration using RPC function
+  /// Used during signup flow after OTP verification
+  ///
+  /// Returns:
+  /// - `{'user': {...}, 'user_app': {...}}` with newly created records
+  Future<Map<String, dynamic>?> createUserProfileWithApp({
+    required String userId,
+    required String email,
+    required String appId,
+  }) async {
+    try {
+      final result = await SupabaseConfig.client.rpc(
+        'create_user_profile',
+        params: {
+          'p_user_id': userId,
+          'p_email': email,
+          'p_app_id': appId,
+        },
+      );
+
+      if (result == null) return null;
+      return Map<String, dynamic>.from(result as Map);
+    } catch (e) {
+      log('Failed to create user profile with app: $e',
+          name: AuthConstants.loggerName, error: e);
+      rethrow; // Let the caller handle via NetworkExceptions
+    }
+  }
+
+  /// Deletes user from Supabase Auth using RPC function
+  /// Should only be called when user has no other app registrations
+  Future<void> deleteAuthUser() async {
+    try {
+      await SupabaseConfig.client.rpc('delete_user');
+      log('Auth user deleted successfully', name: AuthConstants.loggerName);
+    } catch (e) {
+      log('Failed to delete auth user: $e',
+          name: AuthConstants.loggerName, error: e);
+      rethrow; // Let the caller handle via NetworkExceptions
+    }
+  }
+
+  /// Checks if user exists and grants app access if they exist but aren't registered
+  /// Used during signup flow to handle cross-app users
+  ///
+  /// Returns:
+  /// - `{'user': null, 'user_app': null}` if user doesn't exist (new user)
+  /// - `{'user': {...}, 'user_app': {...}}` if user exists and was granted access
+  Future<Map<String, dynamic>?> checkUserAndGrantAppAccess({
+    required String email,
+    required String appId,
+  }) async {
+    try {
+      final result = await SupabaseConfig.client.rpc(
+        'check_user_and_grant_app_access',
+        params: {
+          'user_email': email,
+          'p_app_id': appId,
+        },
+      );
+
+      if (result == null) return null;
+      return Map<String, dynamic>.from(result as Map);
+    } catch (e) {
+      log('Failed to check user and grant app access: $e',
+          name: AuthConstants.loggerName, error: e);
+      rethrow; // Let the caller handle via NetworkExceptions
+    }
+  }
 }

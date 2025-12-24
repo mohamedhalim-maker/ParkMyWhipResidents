@@ -1,5 +1,12 @@
 class AppStrings {
   static const String appName = 'ParkMyWhip Resident';
+  static const String authLoggerName = 'SupabaseAuth';
+}
+
+class DatabaseStrings {
+  // Table names
+  static const String usersTable = 'users';
+  static const String userAppsTable = 'user_apps';
 }
 
 class AuthStrings {
@@ -89,6 +96,16 @@ class AuthStrings {
   static const String passwordResetSuccess = 'Password Reset Successfully!';
   static const String passwordResetSuccessMessage =
       'Your password has been changed successfully. You can now log in with your new password.';
+
+  // Deep link redirect URLs
+  static String verifyEmailRedirectUrl(String deepLinkScheme) =>
+      '$deepLinkScheme://verify-email';
+
+  static String resetPasswordRedirectUrl(String deepLinkScheme) =>
+      '$deepLinkScheme://reset-password';
+
+  // Default user role
+  static const String defaultUserRole = 'user';
 }
 
 class SharedPrefStrings {
@@ -97,6 +114,10 @@ class SharedPrefStrings {
   static const String authToken = 'auth_token';
   static const String isLoggedIn = 'is_logged_in';
   static const String isRecoveryMode = 'is_recovery_mode';
+
+  // Cache keys (aliases for consistency with auth constants)
+  static const String userIdCacheKey = userId;
+  static const String userProfileCacheKey = userProfile;
 }
 
 class ErrorStrings {

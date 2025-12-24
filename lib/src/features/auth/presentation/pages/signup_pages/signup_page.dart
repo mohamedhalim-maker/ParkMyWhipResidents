@@ -18,7 +18,10 @@ class SignupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CommonAppBar(),
+      appBar: CommonAppBar(
+        onBackPress: () =>
+            getIt<SignupCubit>().navigateBackToLogin(context: context),
+      ),
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Padding(
