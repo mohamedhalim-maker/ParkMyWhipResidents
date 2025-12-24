@@ -323,14 +323,19 @@ User Action → Page → Cubit → Service/AuthManager → Supabase
 │       ├─── Invalid ──► Show field errors                    │
 │       │                                                     │
 │       ▼                                                     │
-│  checkUserAppAccess(email, appId) ──► RPC call              │
-│       │                                                     │
-│       ├─── user: null ──► "Account not found"               │
-│       │                                                     │
-│       ├─── user_app: null ──► "Not registered for this app" │
-│       │                                                     │
-│       ▼                                                     │
 │  signInWithEmail(email, password)                           │
+│       │                                                     │
+│       ├─── Step 1: Pre-Auth Validation                      │
+│       │    Call RPC: get_user_by_email_with_app_check       │
+│       │    ├─── user: null ──► "Account not found"          │
+│       │    ├─── user_app: null ──► "Not registered"         │
+│       │    └─── user_app.is_active: false ──► "Deactivated" │
+│       │                                                     │
+│       ├─── Step 2: Authenticate                             │
+│       │    auth.signInWithPassword()                        │
+│       │                                                     │
+│       ├─── Step 3: Fetch User Data                          │
+│       │    getUserProfile() & getUserAppRegistration()      │
 │       │                                                     │
 │       ├─── Success ──► Cache user ──► Dashboard             │
 │       │                                                     │
@@ -341,18 +346,26 @@ User Action → Page → Cubit → Service/AuthManager → Supabase
 
 **Key Components**:
 1. **LoginCubit** manages form validation and login state
-2. **UserProfileRepository.checkUserAppAccess()** calls RPC `get_user_by_email_with_app_check`
-3. **RPC Response** returns `{user: {...}, user_app: {...}}` for valid access
-4. **NetworkExceptions** handles all Supabase errors centrally
+2. **Pre-Authentication Check** uses RPC `get_user_by_email_with_app_check` to validate app access BEFORE authentication
+3. **No Auto-Creation** - Users MUST complete signup first; login does not create missing records
+4. **RPC Response** returns `{user: {...}, user_app: {...}}` for valid access
+5. **NetworkExceptions** handles all Supabase errors centrally
 
-**RPC Response Scenarios**:
-| `user` | `user_app` | Action |
-|--------|------------|--------|
-| `null` | `null` | Error: "Account not found" |
-| `exists` | `null` | Error: "Not registered for this app" |
-| `exists` | `exists` | Proceed to `signInWithEmail()` |
+**Pre-Auth Validation Scenarios**:
+| `user` | `user_app` | `is_active` | Action |
+|--------|------------|-------------|--------|
+| `null` | `null` | N/A | Error: "Account not found. Please sign up first." |
+| `exists` | `null` | N/A | Error: "Not registered for this app. Please contact support." |
+| `exists` | `exists` | `false` | Error: "Account deactivated. Please contact support." |
+| `exists` | `exists` | `true` | ✅ Proceed to authentication |
 
-**Example: Signup with OTP Verification Flow**
+**Security Benefits**:
+- Validates app access before consuming authentication attempts
+- Prevents cross-app unauthorized access in multi-app architecture
+- Users from other apps using same Supabase instance cannot login
+- Clear error messages guide users appropriately
+
+**Example: Signup with OTP Verification Flow (Multi-App Architecture)**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -362,27 +375,57 @@ User Action → Page → Cubit → Service/AuthManager → Supabase
 │  SignupPage (enter email)                                   │
 │       │                                                     │
 │       ▼                                                     │
-│  SetPasswordPage (create password)                          │
+│  validateEmailForm() ──► RPC: check_user_and_grant_app_access│
 │       │                                                     │
-│       ▼                                                     │
-│  createAccountWithEmail() ──► Supabase auto-sends OTP       │
+│       ├─── status: 'exists_this_app'                        │
+│       │    └─► Error: "Already registered. Please sign in." │
 │       │                                                     │
-│       ▼                                                     │
-│  EnterOtpCodePage (user enters 6-digit code)                │
+│       ├─── status: 'granted_access' (cross-app user)        │
+│       │    └─► RPC creates user_apps record                 │
+│       │    └─► Prefill LoginCubit with email & error        │
+│       │    └─► Navigate to LoginPage                        │
 │       │                                                     │
-│       ▼                                                     │
-│  verifyOtpWithEmail(email, otp)                             │
-│       │                                                     │
-│       ├─── Success ──► User auto-logged in ──► Dashboard    │
-│       │                                                     │
-│       └─── Error ──► Show error, allow resend               │
+│       └─── status: 'new_user'                               │
+│            └─► Navigate to SetPasswordPage                  │
+│                     │                                       │
+│                     ▼                                       │
+│           createAccountWithEmail() ──► Supabase sends OTP   │
+│                     │              (creates auth.users)     │
+│                     ▼                                       │
+│           EnterOtpCodePage (user enters 6-digit code)       │
+│                     │                                       │
+│                     ▼                                       │
+│           verifyOtpWithEmail(email, otp)                    │
+│                     │                                       │
+│                     ├─── OTP Valid ──► RPC function         │
+│                     │    create_user_profile_on_first_login │
+│                     │    └─► Creates users record           │
+│                     │    └─► Creates user_apps record       │
+│                     │    └─► Returns user data              │
+│                     │                                       │
+│                     ├─── Success ──► Cache user ──► Dashboard│
+│                     │                                       │
+│                     └─── Error ──► Show error, allow resend │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Cross-App Signup Scenarios:**
+
+| Scenario | RPC Status | Action |
+|----------|------------|--------|
+| New user (no account) | `new_user` | Continue to password page |
+| User exists for THIS app | `exists_this_app` | Error: "Already registered" |
+| User exists for OTHER app | `granted_access` | Create user_apps → Navigate to login |
+
 Key components:
-1. **SignupCubit** manages the entire signup flow including OTP verification
-2. **Supabase** automatically sends 6-digit OTP on `signUp()` call
-3. **verifyOTP** with `OtpType.signup` verifies the code and returns a session
-4. User is auto-logged in after successful OTP verification
-5. Resend OTP uses `signInWithOtp()` method with 60-second cooldown
+1. **SignupCubit** manages the entire signup flow including cross-app detection
+2. **RPC `check_user_and_grant_app_access`** checks user status BEFORE signup and grants access for cross-app users
+3. **LoginCubit.prefillForCrossAppSignup()** prefills email and shows error message for cross-app users
+4. **Supabase** automatically sends 6-digit OTP on `signUp()` call (creates `auth.users` record)
+5. **verifyOTP** with `OtpType.signup` verifies the code and logs user in
+6. **RPC Function** `create_user_profile_on_first_login` creates `users` and `user_apps` records (bypasses RLS)
+7. User is auto-logged in after successful OTP verification with complete profile
+8. Resend OTP uses `signInWithOtp()` method with 60-second cooldown
+
+**Important:** Database records (`users` and `user_apps`) are ONLY created after successful OTP verification, not during initial signup. This prevents orphaned records for unverified users.

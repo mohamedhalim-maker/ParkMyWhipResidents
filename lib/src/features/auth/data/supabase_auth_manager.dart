@@ -36,6 +36,62 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     String password,
   ) async {
     try {
+      // Step 1: Check if user is registered for this app BEFORE authentication
+      log('Checking user app access for: $email',
+          name: AuthConstants.loggerName);
+
+      final appAccessResult = await SupabaseConfig.client.rpc(
+        'get_user_by_email_with_app_check',
+        params: {
+          'user_email': email,
+          'p_app_id': AppConfig.appId,
+        },
+      );
+
+      if (appAccessResult == null) {
+        log('User not found with email: $email',
+            name: AuthConstants.loggerName);
+        throw Exception(
+          'No account found with this email address. Please sign up first.',
+        );
+      }
+
+      final data = Map<String, dynamic>.from(appAccessResult as Map);
+      final userData = data['user'] as Map<String, dynamic>?;
+      final userAppData = data['user_app'] as Map<String, dynamic>?;
+
+      // Check if user exists in users table
+      if (userData == null) {
+        log('User profile not found for: $email',
+            name: AuthConstants.loggerName);
+        throw Exception(
+          'No account found with this email address. Please sign up first.',
+        );
+      }
+
+      // Check if user is registered for this specific app
+      if (userAppData == null) {
+        log('User not registered for app: ${AppConfig.appId}',
+            name: AuthConstants.loggerName);
+        throw Exception(
+          'Your account is not registered for this app. Please contact support.',
+        );
+      }
+
+      // Check if user is active in the app
+      final isActive = userAppData['is_active'] as bool? ?? false;
+      if (!isActive) {
+        log('User is deactivated for app: ${AppConfig.appId}',
+            name: AuthConstants.loggerName);
+        throw Exception(
+          'Your account has been deactivated. Please contact support.',
+        );
+      }
+
+      log('User app access validated successfully',
+          name: AuthConstants.loggerName);
+
+      // Step 2: Authenticate with Supabase
       final response = await SupabaseConfig.auth.signInWithPassword(
         email: email,
         password: password,
@@ -50,23 +106,21 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       final userId = response.user!.id;
 
-      // Ensure user profile exists (creates if missing)
-      final user = await _getUserWithProfile(userId);
+      // Step 3: Fetch user profile and app registration
+      final user = await _userProfileRepository.getUserProfile(userId);
+      final userApp = await _userAppRepository.getUserAppRegistration(
+        userId,
+        AppConfig.appId,
+      );
 
-      // Ensure app registration exists (creates if missing)
-      final userApp = await _ensureUserAppRegistration(userId);
-
-      // Validate app access status
-      if (!userApp.isActive) {
-        log('User is deactivated for app: ${AppConfig.appId}',
+      // These should exist since we validated them above
+      if (user == null || userApp == null) {
+        log('Failed to fetch user data after authentication',
             name: AuthConstants.loggerName);
-        await SupabaseConfig.auth.signOut();
-        throw Exception(
-          'Your account has been deactivated. Please contact support.',
-        );
+        throw Exception('Failed to load user profile. Please try again.');
       }
 
-      // Update user with app registration and re-cache
+      // Update user with app registration and cache
       final userWithApp = user.copyWith(userApp: userApp);
       await _cacheService.cacheUser(userWithApp);
 
@@ -143,6 +197,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
     try {
       log('Verifying OTP for email: $email', name: AuthConstants.loggerName);
 
+      // Step 1: Verify OTP and authenticate user
       final response = await SupabaseConfig.auth.verifyOTP(
         email: email,
         token: otpCode,
@@ -160,11 +215,41 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       final userId = response.user!.id;
 
-      // Ensure user profile exists (creates if missing)
-      final user = await _getUserWithProfile(userId);
+      // Step 2: Create user profile and app registration using RPC
+      log('Creating user profile and app registration via RPC',
+          name: AuthConstants.loggerName);
 
-      // Ensure app registration exists (creates if missing)
-      final userApp = await _ensureUserAppRegistration(userId);
+      final rpcResult = await SupabaseConfig.client.rpc(
+        'create_user_profile_on_first_login',
+        params: {
+          'p_user_id': userId,
+          'p_email': email,
+          'p_app_id': AppConfig.appId,
+        },
+      );
+
+      if (rpcResult == null) {
+        log('RPC call failed: No result returned',
+            name: AuthConstants.loggerName);
+        throw Exception('Failed to create user profile. Please try again.');
+      }
+
+      log('User profile and app registration created successfully',
+          name: AuthConstants.loggerName);
+
+      // Step 3: Parse RPC response
+      final data = Map<String, dynamic>.from(rpcResult as Map);
+      final userData = data['user'] as Map<String, dynamic>?;
+      final userAppData = data['user_app'] as Map<String, dynamic>?;
+
+      if (userData == null || userAppData == null) {
+        log('Invalid RPC response: Missing user or user_app data',
+            name: AuthConstants.loggerName);
+        throw Exception('Failed to create user profile. Please try again.');
+      }
+
+      // Step 4: Create User and UserApp objects
+      final userApp = UserApp.fromJson(userAppData);
 
       // Validate app access status
       if (!userApp.isActive) {
@@ -176,11 +261,15 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         );
       }
 
-      // Update user with app registration and cache
-      final userWithApp = user.copyWith(userApp: userApp);
-      await _cacheService.cacheUser(userWithApp);
+      final user = User.fromJson(userData, userApp: userApp);
 
-      return userWithApp;
+      // Step 5: Cache user data
+      await _cacheService.cacheUser(user);
+
+      log('User cached successfully. Sign-up complete.',
+          name: AuthConstants.loggerName);
+
+      return user;
     } on sb.AuthException catch (e) {
       log('Auth error during OTP verification: ${e.message}',
           name: AuthConstants.loggerName, error: e);

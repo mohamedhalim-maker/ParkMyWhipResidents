@@ -9,6 +9,78 @@ This app uses Supabase for:
 
 ---
 
+## Authentication Flow Architecture
+
+### Key Principles
+
+1. **No Auto-Creation on Login**: The login flow does NOT automatically create user records. Users must complete signup first.
+
+2. **RPC-Based Record Creation**: User profile and app registration records are created using RPC functions that bypass RLS policies.
+
+3. **Pre-Authentication Validation**: Login validates user app access BEFORE authentication to prevent unauthorized cross-app access.
+
+### Sign-Up Flow (OTP Verification)
+
+```
+1. User enters email & password
+   ↓
+2. createAccountWithEmail() → Creates auth.users record
+   ↓
+3. Supabase sends OTP email automatically
+   ↓
+4. User enters 6-digit OTP
+   ↓
+5. verifyOTP() → Validates OTP, authenticates user
+   ↓
+6. create_user_profile_on_first_login RPC
+   ├─ Creates users record
+   ├─ Creates user_apps record
+   └─ Returns user data
+   ↓
+7. Cache user data → Navigate to dashboard
+```
+
+**Key Points:**
+- `auth.users` record created immediately on signup
+- `users` and `user_apps` records created ONLY after successful OTP verification
+- Prevents orphaned records for unverified users
+- RPC function bypasses RLS policies securely
+
+### Login Flow (Pre-Authentication Validation)
+
+```
+1. User enters email & password
+   ↓
+2. get_user_by_email_with_app_check RPC
+   ├─ Validates user exists
+   ├─ Validates user is registered for this app
+   └─ Validates user is active
+   ↓
+3. signInWithPassword() → Authenticate
+   ↓
+4. Fetch user profile & app registration
+   ↓
+5. Cache user data → Navigate to dashboard
+```
+
+**Key Points:**
+- Pre-authentication validation prevents wasted auth attempts
+- Users from other apps cannot login (multi-app security)
+- Clear error messages for different failure scenarios
+- No auto-creation of missing records
+
+### Security Benefits
+
+| Feature | Benefit |
+|---------|---------|
+| Pre-auth validation | Prevents cross-app unauthorized access |
+| RPC-based creation | Bypasses RLS while maintaining security |
+| No auto-creation on login | Enforces proper signup flow |
+| Atomic record creation | Ensures data consistency |
+| Multi-app isolation | Users from other apps cannot access this app |
+
+---
+
 ## Password Recovery Flow
 
 ### Overview
@@ -585,6 +657,103 @@ if (result != null) {
 - `SECURITY DEFINER` runs function with owner privileges, bypassing RLS
 - Single query is more efficient than multiple separate queries
 - Reduces database round-trips and ensures atomic data retrieval
+
+```sql
+-- Function to create user profile on first login (used after OTP verification)
+-- Bypasses RLS to create users and user_apps records atomically
+CREATE OR REPLACE FUNCTION public.create_user_profile_on_first_login(
+  p_user_id uuid,
+  p_email text,
+  p_app_id text
+)
+RETURNS jsonb
+SECURITY DEFINER  -- Runs with elevated privileges, bypasses RLS
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_user jsonb;
+  v_user_app jsonb;
+BEGIN
+  -- Check if user already exists
+  SELECT row_to_json(u.*) INTO v_user
+  FROM users u
+  WHERE u.id = p_user_id;
+  
+  -- Create user profile if doesn't exist
+  IF v_user IS NULL THEN
+    INSERT INTO users (id, email, full_name, is_active, metadata, created_at, updated_at)
+    VALUES (
+      p_user_id,
+      p_email,
+      split_part(p_email, '@', 1),  -- Extract name from email
+      true,
+      '{}'::jsonb,
+      now(),
+      now()
+    )
+    RETURNING row_to_json(users.*) INTO v_user;
+  END IF;
+  
+  -- Check if user_app registration exists
+  SELECT row_to_json(ua.*) INTO v_user_app
+  FROM user_apps ua
+  WHERE ua.user_id = p_user_id AND ua.app_id = p_app_id;
+  
+  -- Create app registration if doesn't exist
+  IF v_user_app IS NULL THEN
+    INSERT INTO user_apps (user_id, app_id, role, is_active, metadata, created_at, updated_at)
+    VALUES (
+      p_user_id,
+      p_app_id,
+      'user',
+      true,
+      '{}'::jsonb,
+      now(),
+      now()
+    )
+    RETURNING row_to_json(user_apps.*) INTO v_user_app;
+  END IF;
+  
+  -- Return both user and user_app data
+  RETURN jsonb_build_object(
+    'user', v_user,
+    'user_app', v_user_app
+  );
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.create_user_profile_on_first_login(uuid, text, text) 
+  TO authenticated;
+```
+
+**Usage in Dart:**
+```dart
+// Called after successful OTP verification during signup
+final rpcResult = await SupabaseConfig.client.rpc(
+  'create_user_profile_on_first_login',
+  params: {
+    'p_user_id': userId,
+    'p_email': email,
+    'p_app_id': AppConfig.appId,
+  },
+);
+
+final data = Map<String, dynamic>.from(rpcResult as Map);
+final userData = data['user'] as Map<String, dynamic>;
+final userAppData = data['user_app'] as Map<String, dynamic>;
+
+final userApp = UserApp.fromJson(userAppData);
+final user = User.fromJson(userData, userApp: userApp);
+```
+
+**Why this function is needed:**
+- After OTP verification, user is authenticated but RLS policies may still block INSERT operations
+- Creates both `users` and `user_apps` records atomically in a single transaction
+- Handles duplicate creation gracefully (checks existence before inserting)
+- Returns created/existing data immediately for caching
+- Used in signup flow after successful OTP verification
 
 ---
 

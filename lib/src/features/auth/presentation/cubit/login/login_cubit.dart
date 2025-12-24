@@ -29,6 +29,19 @@ class LoginCubit extends Cubit<LoginState> {
     _validateForm();
   }
 
+  /// Prefill login form when user from another app tries to sign up
+  /// Called from SignupCubit when user already exists in another app
+  void prefillForCrossAppSignup({
+    required String email,
+    required String errorMessage,
+  }) {
+    emailController.text = email;
+    emit(state.copyWith(
+      generalError: errorMessage,
+      isButtonEnabled: false,
+    ));
+  }
+
   // Validate login form and enable/disable button
   void _validateForm() {
     bool isValid = emailController.text.trim().isNotEmpty &&

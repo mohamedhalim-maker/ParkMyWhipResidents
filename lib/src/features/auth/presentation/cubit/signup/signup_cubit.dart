@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:park_my_whip_residents/src/core/config/injection.dart';
+import 'package:park_my_whip_residents/src/core/constants/app_config.dart';
 import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
 import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_cubit.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/signup/signup_state.dart';
+import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class SignupCubit extends Cubit<SignupState> {
   SignupCubit({
@@ -47,24 +51,82 @@ class SignupCubit extends Cubit<SignupState> {
 
   // Validate and submit signup email form
   Future<void> validateEmailForm({required BuildContext context}) async {
-    final emailError = validators.emailValidator(emailController.text.trim());
+    final email = emailController.text.trim();
+    final emailError = validators.emailValidator(email);
 
     if (emailError != null) {
       emit(state.copyWith(emailError: emailError));
       return;
     }
 
-    // Save email to state for next step
-    emit(state.copyWith(
-      signupEmail: emailController.text.trim(),
-      emailError: null,
-    ));
+    // Show loading state
+    emit(state.copyWith(isLoading: true, emailError: null));
 
-    AppLogger.auth('Signup email saved: ${state.signupEmail}');
+    try {
+      // Check if user exists and grant app access if needed
+      AppLogger.auth('Checking user status for email: $email, appId: ${AppConfig.appId}');
 
-    // Navigate to set password page
-    if (context.mounted) {
-      Navigator.of(context).pushNamed(RoutesName.setPassword);
+      final result = await SupabaseConfig.client.rpc(
+        'check_user_and_grant_app_access',
+        params: {
+          'user_email': email,
+          'p_app_id': AppConfig.appId,
+        },
+      );
+
+      AppLogger.auth('RPC result: $result (type: ${result.runtimeType})');
+
+      final data = Map<String, dynamic>.from(result as Map);
+      final status = data['status'] as String;
+
+      AppLogger.auth('User check result - Status: $status');
+
+      if (status == 'exists_this_app') {
+        AppLogger.auth('User already exists for THIS app - showing error');
+        // User already registered for this app
+        emit(state.copyWith(
+          isLoading: false,
+          emailError: 'This email is already registered. Please sign in.',
+        ));
+        return;
+      }
+
+      if (status == 'granted_access') {
+        AppLogger.auth('Cross-app user detected. Redirecting to login.');
+
+        emit(state.copyWith(isLoading: false));
+
+        // Prefill login cubit with email and error message
+        getIt<LoginCubit>().prefillForCrossAppSignup(
+          email: email,
+          errorMessage: 'This account exists. Please sign in to access this app.',
+        );
+
+        // Navigate to login page
+        if (context.mounted) {
+          Navigator.of(context).pushReplacementNamed(RoutesName.login);
+        }
+        return;
+      }
+
+      // status == 'new_user' - Continue with normal signup flow
+      AppLogger.auth('New user. Proceeding to password page.');
+      emit(state.copyWith(
+        isLoading: false,
+        signupEmail: email,
+        emailError: null,
+      ));
+
+      // Navigate to set password page
+      if (context.mounted) {
+        Navigator.of(context).pushNamed(RoutesName.setPassword);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Error checking user status', error: e, stackTrace: stackTrace);
+      emit(state.copyWith(
+        isLoading: false,
+        emailError: 'Failed to verify email. Please try again.',
+      ));
     }
   }
 
@@ -145,6 +207,25 @@ class SignupCubit extends Cubit<SignupState> {
     }
   }
 
+  /// Resets all signup data after successful registration
+  /// Called after OTP verification to clear sensitive data and timers
+  void resetAllData() {
+    // Cancel all timers
+    _resendTimer?.cancel();
+    _otpResendTimer?.cancel();
+
+    // Clear all controllers
+    emailController.clear();
+    passwordController.clear();
+    confirmPasswordController.clear();
+    otpController.clear();
+
+    // Reset state to initial
+    emit(const SignupState());
+
+    AppLogger.auth('Signup data reset after successful registration');
+  }
+
   // Called when set password fields change
   void onPasswordFieldChanged() {
     emit(state.copyWith(
@@ -200,6 +281,11 @@ class SignupCubit extends Cubit<SignupState> {
         Navigator.of(context).pushNamed(RoutesName.enterOtpCode);
         // Start OTP resend countdown
         startOtpResendCountdown();
+
+        // Clear sensitive data after navigation
+        emailController.clear();
+        passwordController.clear();
+        emit(state.copyWith(generalError: null));
       }
     } catch (e) {
       AppLogger.error('Error creating account', error: e);
@@ -305,6 +391,9 @@ class SignupCubit extends Cubit<SignupState> {
             RoutesName.dashboard,
             (route) => false,
           );
+
+          // Reset all signup data after successful navigation
+          resetAllData();
         }
       } else {
         emit(state.copyWith(
