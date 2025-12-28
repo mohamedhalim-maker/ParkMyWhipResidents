@@ -48,6 +48,13 @@ When working on this project, read the relevant documentation files based on the
 
 ## Key Architecture Decisions
 
+1. **Clean Architecture**: Separation of concerns with presentation, domain, and data layers
+2. **Feature-Based Structure**: Code organized by features, not by layers
+3. **Functional Error Handling**: Using `Either<AppException, T>` from dartz package instead of throwing exceptions
+4. **Single Responsibility Cubits**: One cubit per flow (LoginCubit, SignupCubit, etc.)
+5. **Dependency Injection**: GetIt for managing dependencies
+6. **Multi-App Support**: Single codebase supporting multiple apps via `user_apps` junction table
+
 1. **Clean Architecture** - Separation into `data/domain/presentation` layers
 2. **One Cubit Per Flow** - LoginCubit, SignupCubit, ForgotPasswordCubit (not one giant AuthCubit)
 3. **Multi-App User Model** - Users table + user_apps junction table for app-specific roles

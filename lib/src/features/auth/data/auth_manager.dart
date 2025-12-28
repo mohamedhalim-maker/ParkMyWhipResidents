@@ -8,7 +8,9 @@
 // 2. Mix in the required authentication provider mixins
 // 3. Implement all abstract methods with your auth provider logic
 
+import 'package:dartz/dartz.dart';
 import 'package:park_my_whip_residents/src/core/models/user_model.dart';
+import 'package:park_my_whip_residents/src/core/networking/custom_exceptions.dart';
 
 /// Signup eligibility status for cross-app user detection
 enum SignupEligibilityStatus {
@@ -35,79 +37,79 @@ class SignupEligibilityResult {
 
 // Core authentication operations that all auth implementations must provide
 abstract class AuthManager {
-  Future<void> signOut();
-  Future<void> deleteUser();
-  Future<void> updateEmail({required String email});
-  Future<void> resetPassword({required String email});
-  Future<void> updatePassword({required String newPassword});
-  Future<void> sendEmailVerification({required User user}) async =>
-      user.sendEmailVerification();
-  Future<void> refreshUser({required User user}) async => user.refreshUser();
+  Future<Either<AppException, Unit>> signOut();
+  Future<Either<AppException, Unit>> deleteUser();
+  Future<Either<AppException, Unit>> updateEmail({required String email});
+  Future<Either<AppException, Unit>> resetPassword({required String email});
+  Future<Either<AppException, Unit>> updatePassword(
+      {required String newPassword});
 }
 
 // Email/password authentication mixin
 mixin EmailSignInManager on AuthManager {
-  Future<User?> signInWithEmail(
+  Future<Either<AppException, User>> signInWithEmail(
     String email,
     String password,
   );
 
-  Future<User?> createAccountWithEmail(
+  Future<Either<AppException, User>> createAccountWithEmail(
     String email,
     String password,
   );
 
-  Future<void> resendVerificationEmail({required String email});
+  Future<Either<AppException, Unit>> resendVerificationEmail(
+      {required String email});
 
   /// Verify OTP code sent to email during signup
-  Future<User?> verifyOtpWithEmail({
+  Future<Either<AppException, User>> verifyOtpWithEmail({
     required String email,
     required String otpCode,
   });
 
   /// Check if user can sign up or if they should be redirected to login
   /// Used during signup flow to handle cross-app users
-  Future<SignupEligibilityResult> checkSignupEligibility(String email);
+  Future<Either<AppException, SignupEligibilityResult>> checkSignupEligibility(
+      String email);
 }
 
 // Anonymous authentication for guest users
 mixin AnonymousSignInManager on AuthManager {
-  Future<User?> signInAnonymously();
+  Future<Either<AppException, User>> signInAnonymously();
 }
 
 // Apple Sign-In authentication (iOS/web)
 mixin AppleSignInManager on AuthManager {
-  Future<User?> signInWithApple();
+  Future<Either<AppException, User>> signInWithApple();
 }
 
 // Google Sign-In authentication (all platforms)
 mixin GoogleSignInManager on AuthManager {
-  Future<User?> signInWithGoogle();
+  Future<Either<AppException, User>> signInWithGoogle();
 }
 
 // JWT token authentication for custom backends
 mixin JwtSignInManager on AuthManager {
-  Future<User?> signInWithJwtToken(String jwtToken);
+  Future<Either<AppException, User>> signInWithJwtToken(String jwtToken);
 }
 
 // Phone number authentication with SMS verification
 mixin PhoneSignInManager on AuthManager {
-  Future<void> beginPhoneAuth({
+  Future<Either<AppException, Unit>> beginPhoneAuth({
     required String phoneNumber,
     required void Function() onCodeSent,
   });
 
-  Future<User?> verifySmsCode({required String smsCode});
+  Future<Either<AppException, User>> verifySmsCode({required String smsCode});
 }
 
 // Facebook Sign-In authentication
 mixin FacebookSignInManager on AuthManager {
-  Future<User?> signInWithFacebook();
+  Future<Either<AppException, User>> signInWithFacebook();
 }
 
 // Microsoft Sign-In authentication (Azure AD)
 mixin MicrosoftSignInManager on AuthManager {
-  Future<User?> signInWithMicrosoft(
+  Future<Either<AppException, User>> signInWithMicrosoft(
     List<String> scopes,
     String tenantId,
   );
@@ -115,5 +117,5 @@ mixin MicrosoftSignInManager on AuthManager {
 
 // GitHub Sign-In authentication (OAuth)
 mixin GithubSignInManager on AuthManager {
-  Future<User?> signInWithGithub();
+  Future<Either<AppException, User>> signInWithGithub();
 }

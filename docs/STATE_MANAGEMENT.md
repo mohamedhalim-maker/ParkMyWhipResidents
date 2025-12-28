@@ -129,6 +129,86 @@ class LoginState extends Equatable {
 
 ---
 
+## Error Handling in Cubits
+
+### Using Either/Fold Pattern
+
+**✅ Correct Way** (No try-catch):
+
+```dart
+Future<void> login() async {
+  emit(state.copyWith(isLoading: true));
+  
+  final result = await authManager.signInWithEmail(
+    emailController.text.trim(),
+    passwordController.text.trim(),
+  );
+  
+  result.fold(
+    (error) {
+      // Handle error - Left side
+      AppLogger.error('Login failed', error: error);
+      emit(state.copyWith(
+        isLoading: false,
+        generalError: error.message,
+      ));
+    },
+    (user) {
+      // Handle success - Right side
+      AppLogger.auth('User logged in: ${user.email}');
+      emit(state.copyWith(isLoading: false));
+      navigateToDashboard();
+    },
+  );
+}
+```
+
+**❌ Wrong Way** (Don't do this):
+
+```dart
+// DON'T use try-catch in cubits!
+Future<void> login() async {
+  try {
+    final user = await authManager.signInWithEmail(...);
+    emit(state.copyWith(user: user));
+  } catch (e) {
+    emit(state.copyWith(error: e.toString()));
+  }
+}
+```
+
+### Error Display Patterns
+
+```dart
+// Field-specific error
+result.fold(
+  (error) => emit(state.copyWith(emailError: error.message)),
+  (success) => emit(state.copyWith(emailError: null)),
+);
+
+// General error (toast/snackbar)
+result.fold(
+  (error) => emit(state.copyWith(generalError: error.message)),
+  (success) => showSuccess(),
+);
+
+// Multiple operations with fold
+final eligibilityResult = await authManager.checkSignupEligibility(email);
+
+eligibilityResult.fold(
+  (error) => emit(state.copyWith(emailError: error.message)),
+  (eligibility) {
+    if (eligibility.isExistingUser) {
+      redirectToLogin();
+    } else {
+      proceedToSignup();
+    }
+  },
+);
+```
+
+---
+
 ## Cubit Methods
 
 ### Validation Method

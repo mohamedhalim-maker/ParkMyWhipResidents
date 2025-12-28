@@ -3,6 +3,7 @@ import 'package:park_my_whip_residents/src/core/config/injection.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_cubit.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_cubit.dart';
 
 class ForgotPassword extends StatelessWidget {
   const ForgotPassword({super.key});
@@ -17,8 +18,11 @@ class ForgotPassword extends StatelessWidget {
           minimumSize: Size(0, 0),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        onPressed: () => getIt<ForgotPasswordCubit>()
-            .navigateToForgotPasswordPage(context: context),
+        onPressed: () =>
+            getIt<ForgotPasswordCubit>().navigateToForgotPasswordPage(
+          context: context,
+          loginCubit: getIt<LoginCubit>(),
+        ),
         child: Text(
           AuthStrings.forgotPassword,
           style: AppTextStyles.urbanistFont16RichRedSemiBold1_2,

@@ -42,6 +42,89 @@ This project follows **Clean Architecture** with **BLoC pattern** for state mana
 - **Services**: API operations (CRUD)
 - **Auth Manager**: Authentication abstraction
 
+## Error Handling
+
+This project uses **functional error handling** with the `dartz` package for clean, type-safe error management.
+
+### Either Pattern
+
+All data layer operations return `Either<AppException, T>`:
+
+```dart
+// Data layer returns Either
+Future<Either<AppException, User>> signInWithEmail(
+  String email,
+  String password,
+);
+
+// Presentation layer uses fold to handle results
+final result = await authManager.signInWithEmail(email, password);
+
+result.fold(
+  (error) {
+    // Handle error - Left side
+    emit(state.copyWith(
+      isLoading: false,
+      generalError: error.message,
+    ));
+  },
+  (user) {
+    // Handle success - Right side
+    emit(state.copyWith(isLoading: false));
+    navigateToDashboard();
+  },
+);
+```
+
+### Exception Hierarchy
+
+**File**: `lib/src/core/networking/custom_exceptions.dart`
+
+```dart
+abstract class AppException implements Exception {
+  final String message;
+  final String? code;
+  final dynamic originalError;
+}
+
+class AuthenticationException extends AppException { ... }
+class DatabaseException extends AppException { ... }
+class NetworkException extends AppException { ... }
+class StorageException extends AppException { ... }
+class UnknownException extends AppException { ... }
+```
+
+### Exception Mapping
+
+**File**: `lib/src/core/networking/network_exceptions.dart`
+
+```dart
+class SupabaseExceptionMapper {
+  static AppException map(dynamic error) {
+    if (error is AppException) return error;
+    if (error is SocketException) return NetworkException(...);
+    if (error is supabase.AuthException) return _mapAuthException(error);
+    if (error is supabase.PostgrestException) return _mapDatabaseException(error);
+    return UnknownException(...);
+  }
+}
+```
+
+### Error Handling Rules
+
+**✅ DO:**
+- Return `Either<AppException, T>` from data layer
+- Use `fold()` in presentation layer
+- Use `SupabaseExceptionMapper.map()` to convert exceptions
+- Return `Right(value)` for success, `Left(exception)` for errors
+- Use `unit` from dartz for void returns: `Right(unit)`
+
+**❌ DON'T:**
+- Use try-catch in presentation layer (cubits)
+- Throw exceptions from data layer methods
+- Return nullable types when using Either
+- Mix exception throwing with Either pattern
+
 ## Logging
 
 Use `AppLogger` from `lib/src/core/helpers/app_logger.dart` for all logging instead of `print()` or `debugPrint()`.

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:park_my_whip_residents/src/core/config/injection.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
-import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_cubit.dart';
 
 class DontHaveAccountText extends StatelessWidget {

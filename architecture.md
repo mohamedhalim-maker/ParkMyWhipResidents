@@ -29,4 +29,5 @@ When starting work on this project:
 - **App**: Park My Whip - Resident (`park_my_whip_resident`)
 - **Stack**: Flutter + Supabase + BLoC (Cubit)
 - **Architecture**: Clean Architecture with feature-based structure
+- **Error Handling**: Functional approach using `Either<AppException, T>` from dartz
 - **Multi-App**: Users can belong to multiple apps via `user_apps` junction table

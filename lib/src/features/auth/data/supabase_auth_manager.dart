@@ -1,8 +1,10 @@
 import 'dart:developer';
+import 'package:dartz/dartz.dart';
 import 'package:park_my_whip_residents/src/core/constants/app_config.dart';
 import 'package:park_my_whip_residents/src/core/helpers/shared_pref_helper.dart';
 import 'package:park_my_whip_residents/src/core/models/user_app_model.dart';
 import 'package:park_my_whip_residents/src/core/models/user_model.dart';
+import 'package:park_my_whip_residents/src/core/networking/custom_exceptions.dart';
 import 'package:park_my_whip_residents/src/core/networking/network_exceptions.dart';
 import 'package:park_my_whip_residents/src/features/auth/data/auth_constants.dart';
 import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart';
@@ -31,7 +33,7 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         _cacheService = UserCacheService(sharedPrefHelper);
 
   @override
-  Future<User?> signInWithEmail(
+  Future<Either<AppException, User>> signInWithEmail(
     String email,
     String password,
   ) async {
@@ -48,8 +50,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (appAccessResult == null) {
         log('User not found with email: $email',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'No account found with this email address. Please sign up first.',
+        return left(
+          const AuthenticationException(
+            message:
+                'No account found with this email address. Please sign up first.',
+          ),
         );
       }
 
@@ -61,8 +66,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (userData == null) {
         log('User profile not found for: $email',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'No account found with this email address. Please sign up first.',
+        return left(
+          const AuthenticationException(
+            message:
+                'No account found with this email address. Please sign up first.',
+          ),
         );
       }
 
@@ -70,8 +78,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (userAppData == null) {
         log('User not registered for app: ${AppConfig.appId}',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'Your account is not registered for this app. Try signing up.',
+        return left(
+          const AuthenticationException(
+            message:
+                'Your account is not registered for this app. Try signing up.',
+          ),
         );
       }
 
@@ -80,8 +91,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (!isActive) {
         log('User is deactivated for app: ${AppConfig.appId}',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'Your account has been deactivated. Please contact support.',
+        return left(
+          const AuthenticationException(
+            message:
+                'Your account has been deactivated. Please contact support.',
+          ),
         );
       }
 
@@ -96,7 +110,10 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       if (response.user == null) {
         log('Sign in failed: No user returned', name: AuthConstants.loggerName);
-        throw Exception('Login failed. Please try again.');
+        return left(
+          const AuthenticationException(
+              message: 'Login failed. Please try again.'),
+        );
       }
 
       log('Sign in successful for: $email', name: AuthConstants.loggerName);
@@ -114,27 +131,26 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (user == null || userApp == null) {
         log('Failed to fetch user data after authentication',
             name: AuthConstants.loggerName);
-        throw Exception('Failed to load user profile. Please try again.');
+        return left(
+          const DatabaseException(
+            message: 'Failed to load user profile. Please try again.',
+          ),
+        );
       }
 
       // Update user with app registration and cache
       final userWithApp = user.copyWith(userApp: userApp);
       await _cacheService.cacheUser(userWithApp);
 
-      return userWithApp;
-    } on sb.AuthException catch (e) {
-      log('Auth error during sign in: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return right(userWithApp);
     } catch (e) {
       log('Error during sign in: $e', name: AuthConstants.loggerName, error: e);
-      if (e is Exception) rethrow;
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   @override
-  Future<User?> createAccountWithEmail(
+  Future<Either<AppException, User>> createAccountWithEmail(
     String email,
     String password,
   ) async {
@@ -152,37 +168,34 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (signUpResponse.user == null) {
         log('Account creation failed: No user returned',
             name: AuthConstants.loggerName);
-        throw Exception('Account creation failed. Please try again.');
+        return left(
+          const AuthenticationException(
+            message: 'Account creation failed. Please try again.',
+          ),
+        );
       }
 
       final userId = signUpResponse.user!.id;
       log('Account created successfully. User ID: $userId',
           name: AuthConstants.loggerName);
 
-      return _userFromAuthUser(signUpResponse.user!, userApp: null);
-    } on sb.AuthException catch (e) {
-      log('Auth error during account creation: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
-    } on PostgrestException catch (e) {
-      log('Database error during account creation: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return right(_userFromAuthUser(signUpResponse.user!, userApp: null));
     } catch (e) {
-      log('Unexpected error during account creation: $e',
+      log('Error during account creation: $e',
           name: AuthConstants.loggerName, error: e);
-      if (e is Exception) rethrow;
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   @override
-  Future<void> resendVerificationEmail({required String email}) async {
-    await _sendVerificationEmail(email);
+  Future<Either<AppException, Unit>> resendVerificationEmail(
+      {required String email}) async {
+    return await _sendVerificationEmail(email);
   }
 
   @override
-  Future<SignupEligibilityResult> checkSignupEligibility(String email) async {
+  Future<Either<AppException, SignupEligibilityResult>> checkSignupEligibility(
+      String email) async {
     try {
       log('Checking signup eligibility for: $email',
           name: AuthConstants.loggerName);
@@ -199,27 +212,31 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (data['user_app'] != null) {
         log('Cross-app user detected for: $email',
             name: AuthConstants.loggerName);
-        return const SignupEligibilityResult(
-          status: SignupEligibilityStatus.existingUser,
-          message: 'This account now exists. Please sign in to access this app.',
+        return right(
+          const SignupEligibilityResult(
+            status: SignupEligibilityStatus.existingUser,
+            message:
+                'This account now exists. Please sign in to access this app.',
+          ),
         );
       }
 
       // New user - can proceed with signup
       log('New user detected for: $email', name: AuthConstants.loggerName);
-      return const SignupEligibilityResult(
-        status: SignupEligibilityStatus.newUser,
+      return right(
+        const SignupEligibilityResult(
+          status: SignupEligibilityStatus.newUser,
+        ),
       );
     } catch (e) {
       log('Error checking signup eligibility: $e',
           name: AuthConstants.loggerName, error: e);
-      if (e is Exception) rethrow;
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   @override
-  Future<User?> verifyOtpWithEmail({
+  Future<Either<AppException, User>> verifyOtpWithEmail({
     required String email,
     required String otpCode,
   }) async {
@@ -236,7 +253,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (response.user == null) {
         log('OTP verification failed: No user returned',
             name: AuthConstants.loggerName);
-        throw Exception('OTP verification failed. Please try again.');
+        return left(
+          const AuthenticationException(
+            message: 'OTP verification failed. Please try again.',
+          ),
+        );
       }
 
       log('OTP verified successfully for: $email',
@@ -257,7 +278,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (rpcResult == null) {
         log('RPC call failed: No result returned',
             name: AuthConstants.loggerName);
-        throw Exception('Failed to create user profile. Please try again.');
+        return left(
+          const DatabaseException(
+            message: 'Failed to create user profile. Please try again.',
+          ),
+        );
       }
 
       log('User profile and app registration created successfully',
@@ -271,7 +296,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (userData == null || userAppData == null) {
         log('Invalid RPC response: Missing user or user_app data',
             name: AuthConstants.loggerName);
-        throw Exception('Failed to create user profile. Please try again.');
+        return left(
+          const DatabaseException(
+            message: 'Failed to create user profile. Please try again.',
+          ),
+        );
       }
 
       // Step 4: Create User and UserApp objects
@@ -282,8 +311,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
         log('User is deactivated for app: ${AppConfig.appId}',
             name: AuthConstants.loggerName);
         await SupabaseConfig.auth.signOut();
-        throw Exception(
-          'Your account has been deactivated. Please contact support.',
+        return left(
+          const AuthenticationException(
+            message:
+                'Your account has been deactivated. Please contact support.',
+          ),
         );
       }
 
@@ -295,38 +327,38 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       log('User cached successfully. Sign-up complete.',
           name: AuthConstants.loggerName);
 
-      return user;
-    } on sb.AuthException catch (e) {
-      log('Auth error during OTP verification: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return right(user);
     } catch (e) {
       log('Error during OTP verification: $e',
           name: AuthConstants.loggerName, error: e);
-      if (e is Exception) rethrow;
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   @override
-  Future<void> signOut() async {
+  Future<Either<AppException, Unit>> signOut() async {
     try {
       await SupabaseConfig.auth.signOut();
       await _cacheService.clearCache();
       log('Sign out successful', name: AuthConstants.loggerName);
+      return right(unit);
     } catch (e) {
       log('Error during sign out: $e',
           name: AuthConstants.loggerName, error: e);
-      throw Exception('Failed to sign out. Please try again.');
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   @override
-  Future<void> deleteUser() async {
+  Future<Either<AppException, Unit>> deleteUser() async {
     try {
       final user = SupabaseConfig.auth.currentUser;
       if (user == null) {
-        throw Exception('No user is currently signed in.');
+        return left(
+          const AuthenticationException(
+            message: 'No user is currently signed in.',
+          ),
+        );
       }
 
       final userId = user.id;
@@ -351,14 +383,16 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       await _cacheService.clearCache();
 
       log('User deleted successfully', name: AuthConstants.loggerName);
+      return right(unit);
     } catch (e) {
       log('Error deleting user: $e', name: AuthConstants.loggerName, error: e);
-      throw Exception('Failed to delete account. Please try again.');
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   @override
-  Future<void> updateEmail({required String email}) async {
+  Future<Either<AppException, Unit>> updateEmail(
+      {required String email}) async {
     try {
       await SupabaseConfig.auth.updateUser(sb.UserAttributes(email: email));
 
@@ -368,18 +402,16 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       }
 
       log('Email updated successfully', name: AuthConstants.loggerName);
-    } on sb.AuthException catch (e) {
-      log('Auth error updating email: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return right(unit);
     } catch (e) {
       log('Error updating email: $e', name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   @override
-  Future<void> resetPassword({required String email}) async {
+  Future<Either<AppException, Unit>> resetPassword(
+      {required String email}) async {
     try {
       log('Starting password reset validation for: $email',
           name: AuthConstants.loggerName);
@@ -393,8 +425,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (result == null) {
         log('User not found with email: $email',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'No account found with this email address. Please check your email or sign up.',
+        return left(
+          const AuthenticationException(
+            message:
+                'No account found with this email address. Please check your email or sign up.',
+          ),
         );
       }
 
@@ -406,8 +441,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (userData == null) {
         log('User not found with email: $email',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'No account found with this email address. Please check your email or sign up.',
+        return left(
+          const AuthenticationException(
+            message:
+                'No account found with this email address. Please check your email or sign up.',
+          ),
         );
       }
 
@@ -418,8 +456,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       final isVerified = await _isUserEmailVerified(userId);
       if (!isVerified) {
         log('User email not verified: $email', name: AuthConstants.loggerName);
-        throw Exception(
-          'Your email is not verified. Please verify your email before resetting your password.',
+        return left(
+          const AuthenticationException(
+            message:
+                'Your email is not verified. Please verify your email before resetting your password.',
+          ),
         );
       }
 
@@ -429,8 +470,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (userAppData == null) {
         log('User not registered for app: ${AppConfig.appId}',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'Your account is not registered for this app. Please contact support.',
+        return left(
+          const AuthenticationException(
+            message:
+                'Your account is not registered for this app. Please contact support.',
+          ),
         );
       }
 
@@ -439,8 +483,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
       if (!isActive) {
         log('User is deactivated for app: ${AppConfig.appId}',
             name: AuthConstants.loggerName);
-        throw Exception(
-          'Your account has been deactivated. Please contact support.',
+        return left(
+          const AuthenticationException(
+            message:
+                'Your account has been deactivated. Please contact support.',
+          ),
         );
       }
 
@@ -457,15 +504,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       log('Password reset email sent successfully',
           name: AuthConstants.loggerName);
-    } on sb.AuthException catch (e) {
-      log('Auth error during password reset: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return right(unit);
     } catch (e) {
       log('Error during password reset: $e',
           name: AuthConstants.loggerName, error: e);
-      if (e is Exception) rethrow;
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
@@ -498,28 +541,27 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
   }
 
   @override
-  Future<void> updatePassword({required String newPassword}) async {
+  Future<Either<AppException, Unit>> updatePassword(
+      {required String newPassword}) async {
     try {
       await SupabaseConfig.auth.updateUser(
         sb.UserAttributes(password: newPassword),
       );
 
       log('Password updated successfully', name: AuthConstants.loggerName);
-    } on sb.AuthException catch (e) {
-      log('Auth error updating password: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return right(unit);
     } catch (e) {
       log('Error updating password: $e',
           name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 
   // Private helper methods
 
   /// Sends verification email to user
-  Future<void> _sendVerificationEmail(String email) async {
+  Future<Either<AppException, Unit>> _sendVerificationEmail(
+      String email) async {
     try {
       log('Sending verification email to: $email',
           name: AuthConstants.loggerName);
@@ -533,15 +575,11 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
       log('Verification email sent successfully',
           name: AuthConstants.loggerName);
-    } on sb.AuthException catch (e) {
-      log('Failed to send verification email: ${e.message}',
-          name: AuthConstants.loggerName, error: e);
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return right(unit);
     } catch (e) {
-      log('Unexpected error sending verification email: $e',
+      log('Error sending verification email: $e',
           name: AuthConstants.loggerName, error: e);
-      if (e is Exception) rethrow;
-      throw Exception(NetworkExceptions.getSupabaseExceptionMessage(e));
+      return left(SupabaseExceptionMapper.map(e));
     }
   }
 

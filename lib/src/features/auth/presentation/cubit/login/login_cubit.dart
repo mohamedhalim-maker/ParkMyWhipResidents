@@ -65,13 +65,22 @@ class LoginCubit extends Cubit<LoginState> {
 
     emit(state.copyWith(isLoading: true, generalError: null));
 
-    try {
-      final user = await (authManager as EmailSignInManager).signInWithEmail(
-        emailController.text.trim(),
-        passwordController.text.trim(),
-      );
+    final result = await (authManager as EmailSignInManager).signInWithEmail(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
 
-      if (user != null) {
+    result.fold(
+      (error) {
+        log('Login error: ${error.message}', name: 'LoginCubit', level: 900);
+        emit(state.copyWith(
+          isLoading: false,
+          generalError: error.message.isEmpty
+              ? 'An error occurred during login'
+              : error.message,
+        ));
+      },
+      (user) {
         log('User logged in successfully: ${user.email}', name: 'LoginCubit');
         emit(state.copyWith(isLoading: false));
 
@@ -80,17 +89,8 @@ class LoginCubit extends Cubit<LoginState> {
           Navigator.of(context).pushReplacementNamed(RoutesName.dashboard);
         }
         resetLoginForm();
-      }
-    } catch (e) {
-      log('Login error: $e', name: 'LoginCubit', level: 900);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        generalError: errorMessage.isEmpty
-            ? 'An error occurred during login'
-            : errorMessage,
-      ));
-    }
+      },
+    );
   }
 
   // function to navigate to signup page and clear the login fields

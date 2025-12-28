@@ -60,51 +60,54 @@ class SignupCubit extends Cubit<SignupState> {
     // Show loading state
     emit(state.copyWith(isLoading: true, emailError: null));
 
-    try {
-      // Check if user can sign up or should be redirected to login
-      final result = await (authManager as EmailSignInManager)
-          .checkSignupEligibility(email);
+    final result =
+        await (authManager as EmailSignInManager).checkSignupEligibility(email);
 
-      if (result.isExistingUser) {
-        // Cross-app user - redirect to login
-        AppLogger.auth('Cross-app user detected. Redirecting to login.');
+    result.fold(
+      (error) {
+        AppLogger.error('Error checking user status', error: error);
+        emit(state.copyWith(
+          isLoading: false,
+          emailError: error.message.isEmpty
+              ? 'Failed to verify email. Please try again.'
+              : error.message,
+        ));
+      },
+      (eligibilityResult) {
+        if (eligibilityResult.isExistingUser) {
+          // Cross-app user - redirect to login
+          AppLogger.auth('Cross-app user detected. Redirecting to login.');
 
-        emit(state.copyWith(isLoading: false));
+          emit(state.copyWith(isLoading: false));
 
-        // Prefill login cubit with email and message
-        getIt<LoginCubit>().prefillForCrossAppSignup(
-          email: email,
-          errorMessage: result.message ?? 
-              'This account now exists. Please sign in to access this app.',
-        );
+          // Prefill login cubit with email and message
+          getIt<LoginCubit>().prefillForCrossAppSignup(
+            email: email,
+            errorMessage: eligibilityResult.message ??
+                'This account now exists. Please sign in to access this app.',
+          );
 
-        // Navigate to login page
-        if (context.mounted) {
-          Navigator.of(context).pushReplacementNamed(RoutesName.login);
+          // Navigate to login page
+          if (context.mounted) {
+            Navigator.of(context).pushReplacementNamed(RoutesName.login);
+          }
+          return;
         }
-        return;
-      }
 
-      // New user - continue with normal signup flow
-      AppLogger.auth('New user. Proceeding to password page.');
-      emit(state.copyWith(
-        isLoading: false,
-        signupEmail: email,
-        emailError: null,
-      ));
+        // New user - continue with normal signup flow
+        AppLogger.auth('New user. Proceeding to password page.');
+        emit(state.copyWith(
+          isLoading: false,
+          signupEmail: email,
+          emailError: null,
+        ));
 
-      // Navigate to set password page
-      if (context.mounted) {
-        Navigator.of(context).pushNamed(RoutesName.setPassword);
-      }
-    } catch (e, stackTrace) {
-      AppLogger.error('Error checking user status',
-          error: e, stackTrace: stackTrace);
-      emit(state.copyWith(
-        isLoading: false,
-        emailError: 'Failed to verify email. Please try again.',
-      ));
-    }
+        // Navigate to set password page
+        if (context.mounted) {
+          Navigator.of(context).pushNamed(RoutesName.setPassword);
+        }
+      },
+    );
   }
 
   // navigate back to login page and clear email field
@@ -154,30 +157,30 @@ class SignupCubit extends Cubit<SignupState> {
   Future<void> resendVerificationEmail({required BuildContext context}) async {
     if (state.isLoading || !state.canResendEmail) return;
 
-    try {
-      emit(state.copyWith(isLoading: true, emailError: null));
+    emit(state.copyWith(isLoading: true, emailError: null));
 
-      AppLogger.auth('Resending verification email to ${state.signupEmail}');
+    AppLogger.auth('Resending verification email to ${state.signupEmail}');
 
-      await (authManager as EmailSignInManager)
-          .resendVerificationEmail(email: state.signupEmail!);
+    final result = await (authManager as EmailSignInManager)
+        .resendVerificationEmail(email: state.signupEmail!);
 
-      AppLogger.auth('Verification email resent successfully');
-
-      emit(state.copyWith(isLoading: false));
-
-      // Restart countdown
-      startResendCountdown();
-    } catch (e) {
-      AppLogger.error('Resend verification error', error: e);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        emailError: errorMessage.isEmpty
-            ? 'Failed to resend verification email'
-            : errorMessage,
-      ));
-    }
+    result.fold(
+      (error) {
+        AppLogger.error('Resend verification error', error: error);
+        emit(state.copyWith(
+          isLoading: false,
+          emailError: error.message.isEmpty
+              ? 'Failed to resend verification email'
+              : error.message,
+        ));
+      },
+      (_) {
+        AppLogger.auth('Verification email resent successfully');
+        emit(state.copyWith(isLoading: false));
+        // Restart countdown
+        startResendCountdown();
+      },
+    );
   }
 
   // Navigate back to email entry (when clicking "Change")
@@ -251,41 +254,43 @@ class SignupCubit extends Cubit<SignupState> {
     }
 
     // Call auth manager to create account (Supabase auto-sends OTP)
-    try {
-      emit(state.copyWith(isLoading: true, generalError: null));
+    emit(state.copyWith(isLoading: true, generalError: null));
 
-      AppLogger.auth('Creating account for: ${state.signupEmail}');
+    AppLogger.auth('Creating account for: ${state.signupEmail}');
 
-      await (authManager as EmailSignInManager).createAccountWithEmail(
-        state.signupEmail!,
-        passwordController.text.trim(),
-      );
+    final result =
+        await (authManager as EmailSignInManager).createAccountWithEmail(
+      state.signupEmail!,
+      passwordController.text.trim(),
+    );
 
-      AppLogger.auth('Account created successfully. OTP sent automatically.');
+    result.fold(
+      (error) {
+        AppLogger.error('Error creating account', error: error);
+        emit(state.copyWith(
+          isLoading: false,
+          generalError: error.message.isEmpty
+              ? 'Failed to create account. Please try again.'
+              : error.message,
+        ));
+      },
+      (_) {
+        AppLogger.auth('Account created successfully. OTP sent automatically.');
+        emit(state.copyWith(isLoading: false));
 
-      emit(state.copyWith(isLoading: false));
+        // Navigate to OTP code page
+        if (context.mounted) {
+          Navigator.of(context).pushNamed(RoutesName.enterOtpCode);
+          // Start OTP resend countdown
+          startOtpResendCountdown();
 
-      // Navigate to OTP code page
-      if (context.mounted) {
-        Navigator.of(context).pushNamed(RoutesName.enterOtpCode);
-        // Start OTP resend countdown
-        startOtpResendCountdown();
-
-        // Clear sensitive data after navigation
-        emailController.clear();
-        passwordController.clear();
-        emit(state.copyWith(generalError: null));
-      }
-    } catch (e) {
-      AppLogger.error('Error creating account', error: e);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        generalError: errorMessage.isEmpty
-            ? 'Failed to create account. Please try again.'
-            : errorMessage,
-      ));
-    }
+          // Clear sensitive data after navigation
+          emailController.clear();
+          passwordController.clear();
+          emit(state.copyWith(generalError: null));
+        }
+      },
+    );
   }
 
   // =========== OTP Verification Methods ===========
@@ -326,45 +331,55 @@ class SignupCubit extends Cubit<SignupState> {
   Future<void> resendOtp({required BuildContext context}) async {
     if (state.isLoading || !state.canResendOtp) return;
 
-    try {
-      emit(state.copyWith(isLoading: true, otpError: null));
+    emit(state.copyWith(isLoading: true, otpError: null));
 
-      AppLogger.auth('Resending OTP to ${state.signupEmail}');
+    AppLogger.auth('Resending OTP to ${state.signupEmail}');
 
-      await (authManager as EmailSignInManager)
-          .resendVerificationEmail(email: state.signupEmail!);
+    final result = await (authManager as EmailSignInManager)
+        .resendVerificationEmail(email: state.signupEmail!);
 
-      AppLogger.auth('OTP resent successfully');
-
-      emit(state.copyWith(isLoading: false));
-
-      // Restart countdown
-      startOtpResendCountdown();
-    } catch (e) {
-      AppLogger.error('Resend OTP error', error: e);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        otpError: errorMessage.isEmpty ? 'Failed to resend OTP' : errorMessage,
-      ));
-    }
+    result.fold(
+      (error) {
+        AppLogger.error('Resend OTP error', error: error);
+        emit(state.copyWith(
+          isLoading: false,
+          otpError:
+              error.message.isEmpty ? 'Failed to resend OTP' : error.message,
+        ));
+      },
+      (_) {
+        AppLogger.auth('OTP resent successfully');
+        emit(state.copyWith(isLoading: false));
+        // Restart countdown
+        startOtpResendCountdown();
+      },
+    );
   }
 
   // Verify OTP code and navigate to dashboard on success
   Future<void> verifyOtp({required BuildContext context}) async {
     if (state.isLoading || state.otpCode.length != 6) return;
 
-    try {
-      emit(state.copyWith(isLoading: true, otpError: null));
+    emit(state.copyWith(isLoading: true, otpError: null));
 
-      AppLogger.auth('Verifying OTP for ${state.signupEmail}');
+    AppLogger.auth('Verifying OTP for ${state.signupEmail}');
 
-      final user = await (authManager as EmailSignInManager).verifyOtpWithEmail(
-        email: state.signupEmail!,
-        otpCode: state.otpCode,
-      );
+    final result = await (authManager as EmailSignInManager).verifyOtpWithEmail(
+      email: state.signupEmail!,
+      otpCode: state.otpCode,
+    );
 
-      if (user != null) {
+    result.fold(
+      (error) {
+        AppLogger.error('OTP verification error', error: error);
+        emit(state.copyWith(
+          isLoading: false,
+          otpError: error.message.isEmpty
+              ? 'Invalid OTP code. Please try again.'
+              : error.message,
+        ));
+      },
+      (user) {
         AppLogger.auth('OTP verified successfully. User logged in.');
 
         emit(state.copyWith(
@@ -384,22 +399,8 @@ class SignupCubit extends Cubit<SignupState> {
           // Reset all signup data after successful navigation
           resetAllData();
         }
-      } else {
-        emit(state.copyWith(
-          isLoading: false,
-          otpError: 'Verification failed. Please try again.',
-        ));
-      }
-    } catch (e) {
-      AppLogger.error('OTP verification error', error: e);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        otpError: errorMessage.isEmpty
-            ? 'Invalid OTP code. Please try again.'
-            : errorMessage,
-      ));
-    }
+      },
+    );
   }
 
   @override

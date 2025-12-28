@@ -6,7 +6,8 @@ The data layer handles:
 - Data models (entities)
 - Services (API operations)
 - Authentication management
-- Error translation
+- Error handling with Either pattern
+- Exception mapping from Supabase to domain exceptions
 
 ---
 
@@ -197,7 +198,11 @@ abstract class AuthManager {
 
 /// Mixin for email-based authentication
 mixin EmailSignInManager on AuthManager {
-  Future<User?> signInWithEmail(BuildContext context, String email, String password);
+  Future<Either<AppException, User>> signInWithEmail(String email, String password);
+  Future<Either<AppException, User>> createAccountWithEmail(String email, String password);
+  Future<Either<AppException, Unit>> resendVerificationEmail({required String email});
+  Future<Either<AppException, User>> verifyOtpWithEmail({required String email, required String otpCode});
+  Future<Either<AppException, SignupEligibilityResult>> checkSignupEligibility(String email);
   Future<User?> createAccountWithEmail(BuildContext context, String email, String password);
   Future<void> sendPasswordResetEmail(String email);
   Future<void> resetPassword(String newPassword);
@@ -256,15 +261,204 @@ class SupabaseAuthManager extends AuthManager with EmailSignInManager {
 
 ## Error Handling
 
-### NetworkExceptions Class
+### Either Pattern (Functional Error Handling)
+
+All data layer methods return `Either<AppException, T>` from the `dartz` package:
+
+```dart
+// ✅ Good - Returns Either
+Future<Either<AppException, User>> signInWithEmail(
+  String email,
+  String password,
+) async {
+  try {
+    final response = await SupabaseConfig.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+    
+    if (response.user == null) {
+      return left(const AuthenticationException(
+        message: 'Login failed. Please try again.',
+      ));
+    }
+    
+    final user = await _fetchUserProfile(response.user!.id);
+    return right(user);  // Success
+  } catch (e) {
+    return left(SupabaseExceptionMapper.map(e));  // Error
+  }
+}
+
+// ❌ Bad - Throws exceptions
+Future<User> signInWithEmail(String email, String password) async {
+  throw Exception('Login failed');  // Don't do this!
+}
+```
+
+### AppException Hierarchy
+
+**File**: `lib/src/core/networking/custom_exceptions.dart`
+
+```dart
+abstract class AppException implements Exception {
+  final String message;
+  final String? code;
+  final dynamic originalError;
+  
+  const AppException({
+    required this.message,
+    this.code,
+    this.originalError,
+  });
+}
+
+class AuthenticationException extends AppException { ... }
+class DatabaseException extends AppException { ... }
+class NetworkException extends AppException { ... }
+class StorageException extends AppException { ... }
+class UnknownException extends AppException { ... }
+```
+
+### SupabaseExceptionMapper
 
 **File**: `lib/src/core/networking/network_exceptions.dart`
 
-Translates technical errors to user-friendly messages.
+Converts Supabase-specific exceptions to domain exceptions:
+
+```dart
+class SupabaseExceptionMapper {
+  static AppException map(dynamic error) {
+    // Already mapped
+    if (error is AppException) return error;
+    
+    // Network errors
+    if (error is SocketException) {
+      return NetworkException(
+        message: 'No internet connection',
+        originalError: error,
+      );
+    }
+    
+    // Supabase Auth errors
+    if (error is supabase.AuthException) {
+      return _mapAuthException(error);
+    }
+    
+    // Supabase Database errors
+    if (error is supabase.PostgrestException) {
+      return _mapDatabaseException(error);
+    }
+    
+    // Supabase Storage errors
+    if (error is supabase.StorageException) {
+      return _mapStorageException(error);
+    }
+    
+    // Unknown errors
+    return UnknownException(
+      message: error.toString(),
+      originalError: error,
+    );
+  }
+  
+  static AuthenticationException _mapAuthException(
+    supabase.AuthException error,
+  ) {
+    // Map common auth errors to user-friendly messages
+    final message = error.message.toLowerCase().contains('invalid login')
+        ? 'Invalid email or password'
+        : error.message;
+        
+    return AuthenticationException(
+      message: message,
+      code: error.statusCode,
+      originalError: error,
+    );
+  }
+}
+```
+
+### Error Handling in Data Layer
+
+```dart
+class SupabaseAuthManager extends AuthManager with EmailSignInManager {
+  @override
+  Future<Either<AppException, User>> signInWithEmail(
+    String email,
+    String password,
+  ) async {
+    try {
+      // Step 1: Authenticate
+      final response = await SupabaseConfig.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.user == null) {
+        return left(
+          const AuthenticationException(
+            message: 'Login failed. Please try again.',
+          ),
+        );
+      }
+
+      // Step 2: Fetch user data
+      final user = await _userProfileRepository.getUserProfile(
+        response.user!.id,
+      );
+
+      if (user == null) {
+        return left(
+          const DatabaseException(
+            message: 'Failed to load user profile.',
+          ),
+        );
+      }
+
+      // Step 3: Return success
+      return right(user);
+    } catch (e) {
+      // Convert any exception to AppException
+      return left(SupabaseExceptionMapper.map(e));
+    }
+  }
+
+  @override
+  Future<Either<AppException, Unit>> signOut() async {
+    try {
+      await SupabaseConfig.auth.signOut();
+      await _cacheService.clearCache();
+      return right(unit);  // unit is from dartz for void
+    } catch (e) {
+      return left(SupabaseExceptionMapper.map(e));
+    }
+  }
+}
+```
+
+### Common Error Mapping Patterns
+
+| Supabase Error | User-Friendly Message | Exception Type |
+|----------------|----------------------|----------------|
+| `invalid login credentials` | `Invalid email or password` | AuthenticationException |
+| `email not confirmed` | `Please verify your email address` | AuthenticationException |
+| `User already registered` | `This email is already registered` | AuthenticationException |
+| `23505` (unique violation) | `This record already exists` | DatabaseException |
+| `42501` (permission denied) | `You don't have permission` | DatabaseException |
+| Socket timeout | `No internet connection` | NetworkException |
+
+---
+
+## NetworkExceptions Class (Legacy - Being Replaced)
+
+> **Note**: This class is being phased out in favor of `SupabaseExceptionMapper`. Use the Either pattern for new code.
+
+**File**: `lib/src/core/networking/network_exceptions.dart`
 
 ```dart
 abstract class NetworkExceptions {
-  /// Main entry point - handles all Supabase exception types
+  /// Legacy method - use SupabaseExceptionMapper instead
   static String getSupabaseExceptionMessage(dynamic error) {
     if (error is AuthException) {
       return _getAuthErrorMessage(error);
@@ -272,26 +466,10 @@ abstract class NetworkExceptions {
     if (error is PostgrestException) {
       return _getPostgrestErrorMessage(error);
     }
-    if (error is StorageException) {
-      return _getStorageErrorMessage(error);
-    }
     return 'An unexpected error occurred.';
   }
-
-  /// Shows error in a dialog
-  static void showErrorDialog(dynamic error, {String? title}) { ... }
 }
 ```
-
-### Error Message Mapping
-
-| Error Pattern | User Message |
-|---------------|--------------|
-| `invalid login credentials` | "Invalid email or password..." |
-| `email not confirmed` | "Please verify your email address..." |
-| `user already registered` | "This email is already registered..." |
-| `42501` (Postgres) | "Permission denied..." |
-| `23505` (Postgres) | "This record already exists..." |
 
 ---
 

@@ -37,6 +37,9 @@ dependencies:
   shimmer: ^3.0.0
   app_links: ^6.0.0
 
+   # Dartz for functional programming constructs
+  dartz: ^0.10.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

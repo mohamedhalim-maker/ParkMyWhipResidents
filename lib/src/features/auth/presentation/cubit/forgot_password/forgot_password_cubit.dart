@@ -6,6 +6,7 @@ import 'package:park_my_whip_residents/src/features/auth/data/auth_manager.dart'
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/auth/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_state.dart';
+import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/login/login_cubit.dart';
 import 'package:park_my_whip_residents/src/core/services/password_recovery_manager.dart';
 
 class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
@@ -57,48 +58,42 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
 
     emit(state.copyWith(isLoading: true, emailError: null));
 
-    try {
-      await authManager.resetPassword(
-        email: emailController.text.trim(),
-      );
-      log('✅ Password reset email sent successfully',
-          name: 'ForgotPasswordCubit');
+    final result = await authManager.resetPassword(
+      email: emailController.text.trim(),
+    );
 
-      // Only proceed if there was no error
-      emit(state.copyWith(isLoading: false, emailError: null));
+    result.fold(
+      (error) {
+        log('🔴 Forgot password error: ${error.message}',
+            name: 'ForgotPasswordCubit', level: 900);
 
-      // Start countdown timer
-      _startResendCountdown();
+        final errorMessage = error.message.isEmpty
+            ? 'Failed to send reset link. Please try again.'
+            : error.message;
 
-      // Navigate to success page only if context is still valid
-      if (context.mounted) {
-        Navigator.of(context).pushReplacementNamed(RoutesName.resetLinkSent);
-      }
-    } catch (e) {
-      log('🔴 Forgot password error: $e',
-          name: 'ForgotPasswordCubit', level: 900);
+        log('🔴 Displaying error to user: $errorMessage',
+            name: 'ForgotPasswordCubit', level: 900);
 
-      // Extract clean error message
-      String errorMessage = e
-          .toString()
-          .replaceFirst('Exception: ', '')
-          .replaceFirst('Error: ', '');
+        emit(state.copyWith(
+          isLoading: false,
+          emailError: errorMessage,
+        ));
+      },
+      (_) {
+        log('✅ Password reset email sent successfully',
+            name: 'ForgotPasswordCubit');
 
-      // Ensure we don't show empty error
-      if (errorMessage.isEmpty || errorMessage == 'null') {
-        errorMessage = 'Failed to send reset link. Please try again.';
-      }
+        emit(state.copyWith(isLoading: false, emailError: null));
 
-      log('🔴 Displaying error to user: $errorMessage',
-          name: 'ForgotPasswordCubit', level: 900);
+        // Start countdown timer
+        _startResendCountdown();
 
-      emit(state.copyWith(
-        isLoading: false,
-        emailError: errorMessage,
-      ));
-
-      // DO NOT navigate when there's an error
-    }
+        // Navigate to success page only if context is still valid
+        if (context.mounted) {
+          Navigator.of(context).pushReplacementNamed(RoutesName.resetLinkSent);
+        }
+      },
+    );
   }
 
   // Start countdown timer for resend
@@ -121,29 +116,64 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
   Future<void> resendPasswordResetEmail({required BuildContext context}) async {
     emit(state.copyWith(isLoading: true, emailError: null));
 
-    try {
-      await authManager.resetPassword(
-        email: emailController.text.trim(),
-      );
-      log('Password reset email resent', name: 'ForgotPasswordCubit');
-      emit(state.copyWith(isLoading: false));
+    final result = await authManager.resetPassword(
+      email: emailController.text.trim(),
+    );
 
-      // Restart countdown
-      _startResendCountdown();
-    } catch (e) {
-      log('Resend password reset error: $e',
-          name: 'ForgotPasswordCubit', level: 900);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        emailError:
-            errorMessage.isEmpty ? 'Failed to resend reset link' : errorMessage,
-      ));
-    }
+    result.fold(
+      (error) {
+        log('Resend password reset error: ${error.message}',
+            name: 'ForgotPasswordCubit', level: 900);
+        emit(state.copyWith(
+          isLoading: false,
+          emailError: error.message.isEmpty
+              ? 'Failed to resend reset link'
+              : error.message,
+        ));
+      },
+      (_) {
+        log('Password reset email resent', name: 'ForgotPasswordCubit');
+        emit(state.copyWith(isLoading: false));
+        // Restart countdown
+        _startResendCountdown();
+      },
+    );
+  }
+
+  // Reset all data when navigating back from forgot password page
+  void resetForgotPasswordData() {
+    // Clear all controllers
+    emailController.clear();
+    passwordController.clear();
+    confirmPasswordController.clear();
+
+    // Cancel any running timer
+    _resendTimer?.cancel();
+
+    // Reset state
+    emit(state.copyWith(
+      emailError: null,
+      passwordError: null,
+      confirmPasswordError: null,
+      isEmailButtonEnabled: false,
+      isPasswordButtonEnabled: false,
+      canResendEmail: true,
+      resendCountdownSeconds: 0,
+      isLoading: false,
+    ));
   }
 
   // Navigate to forgot password page from login
-  void navigateToForgotPasswordPage({required BuildContext context}) {
+  void navigateToForgotPasswordPage({
+    required BuildContext context,
+    required LoginCubit loginCubit,
+  }) {
+    // Reset login cubit data
+    loginCubit.resetLoginForm();
+
+    // Reset forgot password data before navigation
+    resetForgotPasswordData();
+
     if (context.mounted) {
       Navigator.of(context).pushNamed(RoutesName.forgotPassword);
     }
@@ -196,31 +226,36 @@ class ForgotPasswordCubit extends Cubit<ForgotPasswordState> {
     emit(state.copyWith(
         isLoading: true, passwordError: null, confirmPasswordError: null));
 
-    try {
-      await authManager.updatePassword(
-        newPassword: passwordController.text.trim(),
-      );
-      log('Password updated successfully', name: 'ForgotPasswordCubit');
+    final result = await authManager.updatePassword(
+      newPassword: passwordController.text.trim(),
+    );
 
-      // Clear recovery mode flag so user stays logged in with new password
-      await PasswordRecoveryManager.setRecoveryMode(false);
+    result.fold(
+      (error) {
+        log('Reset password error: ${error.message}',
+            name: 'ForgotPasswordCubit', level: 900);
+        emit(state.copyWith(
+          isLoading: false,
+          passwordError: error.message.isEmpty
+              ? 'Failed to reset password'
+              : error.message,
+        ));
+      },
+      (_) async {
+        log('Password updated successfully', name: 'ForgotPasswordCubit');
 
-      emit(state.copyWith(isLoading: false));
+        // Clear recovery mode flag so user stays logged in with new password
+        await PasswordRecoveryManager.setRecoveryMode(false);
 
-      // Navigate to success page
-      if (context.mounted) {
-        Navigator.of(context)
-            .pushReplacementNamed(RoutesName.passwordResetSuccess);
-      }
-    } catch (e) {
-      log('Reset password error: $e', name: 'ForgotPasswordCubit', level: 900);
-      final errorMessage = e.toString().replaceFirst('Exception: ', '');
-      emit(state.copyWith(
-        isLoading: false,
-        passwordError:
-            errorMessage.isEmpty ? 'Failed to reset password' : errorMessage,
-      ));
-    }
+        emit(state.copyWith(isLoading: false));
+
+        // Navigate to success page
+        if (context.mounted) {
+          Navigator.of(context)
+              .pushReplacementNamed(RoutesName.passwordResetSuccess);
+        }
+      },
+    );
   }
 
   // Navigate from password reset success page to login

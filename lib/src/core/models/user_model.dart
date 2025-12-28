@@ -93,13 +93,4 @@ class User {
 
   /// Whether the user is active in the current app
   bool get isActiveInApp => userApp?.isActive ?? false;
-
-  // Placeholder methods for auth_manager compatibility
-  Future<void> sendEmailVerification() async {
-    // TODO: Implement email verification when needed
-  }
-
-  Future<void> refreshUser() async {
-    // TODO: Implement user refresh when needed
-  }
 }
