@@ -13,7 +13,6 @@ import 'package:park_my_whip_residents/src/features/auth/data/user_cache_service
 import 'package:park_my_whip_residents/src/features/auth/data/user_profile_repository.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
-import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 /// Supabase implementation of AuthManager
 /// Handles authentication operations using Supabase Auth
