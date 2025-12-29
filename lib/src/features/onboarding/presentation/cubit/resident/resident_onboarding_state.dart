@@ -34,6 +34,9 @@ class ResidentOnboardingState extends Equatable {
   final bool isLoadingImage;
   final File? registrationImage;
   final String? registrationFileName;
+  final File? insuranceFile;
+  final String? insuranceFileName;
+  final bool insuranceIsImage;
 
   const ResidentOnboardingState({
     this.isButtonEnabled = false,
@@ -55,6 +58,9 @@ class ResidentOnboardingState extends Equatable {
     this.isLoadingImage = false,
     this.registrationImage,
     this.registrationFileName,
+    this.insuranceFile,
+    this.insuranceFileName,
+    this.insuranceIsImage = true,
   });
 
   /// Create a copy with updated fields
@@ -78,6 +84,9 @@ class ResidentOnboardingState extends Equatable {
     bool? isLoadingImage,
     File? Function()? registrationImage,
     String? Function()? registrationFileName,
+    File? Function()? insuranceFile,
+    String? Function()? insuranceFileName,
+    bool? insuranceIsImage,
   }) =>
       ResidentOnboardingState(
         isButtonEnabled: isButtonEnabled ?? this.isButtonEnabled,
@@ -121,6 +130,12 @@ class ResidentOnboardingState extends Equatable {
         registrationFileName: registrationFileName != null
             ? registrationFileName()
             : this.registrationFileName,
+        insuranceFile:
+            insuranceFile != null ? insuranceFile() : this.insuranceFile,
+        insuranceFileName: insuranceFileName != null
+            ? insuranceFileName()
+            : this.insuranceFileName,
+        insuranceIsImage: insuranceIsImage ?? this.insuranceIsImage,
       );
 
   @override
@@ -144,5 +159,8 @@ class ResidentOnboardingState extends Equatable {
         isLoadingImage,
         registrationImage,
         registrationFileName,
+        insuranceFile,
+        insuranceFileName,
+        insuranceIsImage,
       ];
 }

@@ -87,7 +87,7 @@ class SelectPermitPlanPage extends StatelessWidget {
                   const Spacer(),
 
                   // Step progress indicator (3/8 steps)
-                  const StepProgressIndicator(currentStep: 3, totalSteps: 8),
+                  const StepProgressIndicator(currentStep: 3, totalSteps: 7),
 
                   verticalSpace(16),
 

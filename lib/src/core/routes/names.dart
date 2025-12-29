@@ -32,7 +32,7 @@ class RoutesName {
   // Onboarding routes
   static const onboardingStep1 = '/onboarding-step-1';
   static const onboardingStep2 = '/onboarding-step-2';
-  
+
   // Resident flow routes
   static const onboardingResidentStep1 = '/onboarding-resident-step-1';
   static const onboardingResidentStep2 = '/onboarding-resident-step-2';
@@ -40,4 +40,5 @@ class RoutesName {
   static const onboardingResidentStep4 = '/onboarding-resident-step-4';
   static const onboardingResidentStep5 = '/onboarding-resident-step-5';
   static const onboardingResidentStep6 = '/onboarding-resident-step-6';
+  static const onboardingResidentStep7 = '/onboarding-resident-step-7';
 }

@@ -2,14 +2,14 @@
 
 ## 📋 Overview
 
-The onboarding feature collects essential user information after successful authentication. This is a **multi-step flow** that guides users through providing personal details and determining their user type (Resident or Visitor). The resident flow includes **6 completed steps**: user info, user type, community selection, building/unit, permit plan, vehicle information, driving license upload, and vehicle registration upload.
+The onboarding feature collects essential user information after successful authentication. This is a **multi-step flow** that guides users through providing personal details and determining their user type (Resident or Visitor). The resident flow includes **7 completed steps**: user info, user type, community selection, building/unit, permit plan, vehicle information, driving license upload, vehicle registration upload, and insurance upload.
 
 ## 🏗️ Architecture
 
 This feature follows **Clean Architecture** with clear separation of concerns:
 - **Data Layer**: Models (`OnboardingData`, `PermitPlanModel`) and services
 - **Domain Layer**: 6 validation functions (pure logic, no Flutter dependencies)
-- **Presentation Layer**: 2 singleton cubits, 8 pages, 14 reusable widgets
+- **Presentation Layer**: 2 singleton cubits, 9 pages, 14 reusable widgets
 
 ### Directory Structure
 
@@ -30,11 +30,11 @@ lib/src/features/onboarding/
     │   ├── general/                          # ✅ General flow (Steps 1-2)
     │   │   ├── general_onboarding_cubit.dart # User name + user type logic
     │   │   └── general_onboarding_state.dart # 4 fields
-    │   └── resident/                         # ✅ Resident flow (Steps 1-6)
+    │   └── resident/                         # ✅ Resident flow (Steps 1-7)
     │       ├── resident_onboarding_cubit.dart # All resident steps
-    │       └── resident_onboarding_state.dart # 18 fields
+    │       └── resident_onboarding_state.dart # 21 fields
     │
-    ├── pages/                                # ✅ 8 pages
+    ├── pages/                                # ✅ 9 pages
     │   ├── user_name_page.dart               # Step 1: First/Last name
     │   ├── user_type_page.dart               # Step 2: Resident/Visitor
     │   └── resident/
@@ -43,7 +43,8 @@ lib/src/features/onboarding/
     │       ├── select_permit_plan_page.dart  # Resident Step 3: Weekly/Monthly/Yearly
     │       ├── add_vehicle_info_page.dart    # Resident Step 4: Vehicle (5 fields)
     │       ├── upload_driving_license_page.dart      # Resident Step 5: License image
-    │       └── upload_vehicle_registration_page.dart # Resident Step 6: Registration image
+    │       ├── upload_vehicle_registration_page.dart # Resident Step 6: Registration image
+    │       └── upload_insurance_page.dart            # Resident Step 7: Insurance (PDF/Image)
     │
     └── widgets/                              # ✅ 14 widgets
         ├── selection_card.dart
@@ -87,10 +88,10 @@ lib/src/features/onboarding/
 - `onUserTypeChanged(String)` - Select resident/visitor
 - `onContinueUserType()` - Pass data to resident/visitor flow
 
-### ResidentOnboardingCubit (Steps 1-6+)
+### ResidentOnboardingCubit (Steps 1-7+)
 
 **Controllers**: 7 total (unitNumber, buildingNumber, plateNumber, vehicleMake, vehicleModel, vehicleColor, vehicleYear)  
-**State**: 18 fields (button, community search, unit/building errors, permit plan, vehicle errors, form visibility, license image/filename, registration image/filename)
+**State**: 21 fields (button, community search, unit/building errors, permit plan, vehicle errors, form visibility, license image/filename, registration image/filename, insurance file/filename/type)
 
 **Key Methods by Step**:
 
@@ -136,14 +137,22 @@ lib/src/features/onboarding/
 **Step 6 - Registration Upload**:
 - `setRegistrationImage()` - Set image and filename
 - `removeRegistrationImage()` - Remove registration
-- `onContinueUploadRegistration()` - Navigate to next step
+- `onContinueUploadRegistration()` - Navigate to Step 7
 - `clearRegistrationData()` - Back navigation cleanup
+
+**Step 7 - Insurance Upload**:
+- `pickFile()` - Pick file (PDF/Image) with validation
+- `handleInsuranceUpload()` - Show file source bottom sheet (camera/gallery/files)
+- `setInsuranceFile()` - Set file, filename, and type (image/PDF)
+- `removeInsuranceFile()` - Remove insurance file
+- `onContinueUploadInsurance()` - Navigate to next step
+- `clearInsuranceData()` - Back navigation cleanup
 
 ---
 
 ## ✅ Completed Features
 
-### Pages (8/8) ✅
+### Pages (9/9) ✅
 
 | Step | Page | Features | State Management |
 |------|------|----------|------------------|
@@ -155,6 +164,7 @@ lib/src/features/onboarding/
 | **R4** | AddVehicleInfoPage | Plate/Make/Model/Color/Year | ResidentOnboardingCubit |
 | **R5** | UploadDrivingLicensePage | License image upload | ResidentOnboardingCubit |
 | **R6** | UploadVehicleRegistrationPage | Vehicle registration image upload | ResidentOnboardingCubit |
+| **R7** | UploadInsurancePage | Insurance file upload (PDF/Image) | ResidentOnboardingCubit |
 
 ### Validators (6/6) ✅
 
@@ -193,6 +203,55 @@ lib/src/features/onboarding/
 
 ## 🎯 Recent Updates
 
+### Step 7 Complete ✅
+
+**UploadInsurancePage** - Insurance file upload with PDF + Image support
+
+**Features**:
+- **Multi-format support**: PNG, JPG, PDF files
+- **Three upload sources**: Camera, Gallery, or File picker
+- **Smart preview**: Images show preview, PDFs show document icon only
+- Empty state: documentIcon (red container) + "Attach file (PNG,JPG,PDF)" + forward arrow
+- Uploaded state (images): Image preview + document icon + filename + close icon
+- Uploaded state (PDFs): Document icon (red container) + filename + close icon
+- File size validation (5MB limit with error dialog)
+- Loading state during file picking
+- Remove uploaded file
+- Max file size text (5MB)
+- Error handling with dialogs
+
+**Widget Enhancement**:
+- `ImageUploadWidget` refactored to support both images and PDFs
+- New parameter: `isImageFile` to control preview behavior
+- Images: Show full preview + document icon
+- PDFs: Show only document icon + filename (no preview)
+
+**State Updates**:
+- insuranceFile (File?)
+- insuranceFileName (String?)
+- insuranceIsImage (bool) - Controls preview type
+
+**Cubit Methods**:
+- `pickFile()` - Pick file (PDF/Image) using file_picker
+- `handleInsuranceUpload()` - Show custom bottom sheet with 3 options
+- `setInsuranceFile()` - Set file, filename, and type
+- `removeInsuranceFile()` - Clear insurance data
+- `onContinueUploadInsurance()` - Navigate to next step
+- `clearInsuranceData()` - Back navigation cleanup
+
+**Integration**:
+- Uses `file_picker` package for PDF + image selection
+- Reuses `pickImageFromCamera()` and `pickImageFromGallery()` for camera/gallery
+- Custom bottom sheet with 3 options: Camera, Gallery, Files
+- File type detection based on extension (.jpg, .jpeg, .png, .pdf)
+- Consistent error handling with existing upload pages
+
+**Navigation Flow**:
+- From: Upload Vehicle Registration (Step 6)
+- To: Step 8 (TBD)
+
+---
+
 ### Step 6 Complete ✅
 
 **UploadVehicleRegistrationPage** - Vehicle registration image upload with camera/gallery picker
@@ -218,7 +277,7 @@ lib/src/features/onboarding/
 **Cubit Methods**:
 - setRegistrationImage() - Set image and filename
 - removeRegistrationImage() - Clear registration data
-- onContinueUploadRegistration() - Navigate to next step
+- onContinueUploadRegistration() - Navigate to Step 7
 - clearRegistrationData() - Back navigation cleanup
 
 **Integration**:
@@ -229,7 +288,7 @@ lib/src/features/onboarding/
 
 **Navigation Flow**:
 - From: Upload Driving License (Step 5)
-- To: Next step (TBD)
+- To: Upload Insurance (Step 7)
 
 ---
 
@@ -424,7 +483,8 @@ CustomTextField(
 - [x] Step 4: Vehicle Info ✅
 - [x] Step 5: Upload License ✅
 - [x] Step 6: Upload Vehicle Registration ✅
-- [ ] Steps 7-8: TBD
+- [x] Step 7: Upload Insurance ✅
+- [ ] Step 8: TBD
 - [ ] Final submission
 
 ### Phase 2: Visitor Flow
@@ -452,19 +512,19 @@ CustomTextField(
 
 ## 📊 Statistics
 
-**Components**: 36 total
-- Pages: 8 (2 general + 6 resident)
+**Components**: 39 total
+- Pages: 9 (2 general + 7 resident)
 - Cubits: 2 (singleton)
-- States: 2 (22 total fields: 4 general + 18 resident)
+- States: 2 (25 total fields: 4 general + 21 resident)
 - Validators: 6
 - Widgets: 14 (5 general + 8 resident + 1 core)
-- Routes: 8
+- Routes: 9
 - Controllers: 7
 
-**Lines of Code**: ~3200+
-- Pages: ~950
-- Cubits: ~650
-- Widgets: ~1000
+**Lines of Code**: ~3800+
+- Pages: ~1050
+- Cubits: ~850
+- Widgets: ~1100
 - Validators: ~160
 - Models: ~100
 
@@ -568,7 +628,9 @@ UploadDrivingLicensePage (R5) → License image upload
     ↓
 UploadVehicleRegistrationPage (R6) → Vehicle registration image upload
     ↓
-[Steps 7-8 TBD]
+UploadInsurancePage (R7) → Insurance file upload (PDF/Image)
+    ↓
+[Step 8 TBD]
     ↓
 Submit → Dashboard
 ```
@@ -594,11 +656,13 @@ ResidentOnboardingCubit:
   ↓
   Step 6: registrationImage, registrationFileName
   ↓
+  Step 7: insuranceFile, insuranceFileName, insuranceIsImage
+  ↓
   submitResidentOnboarding() (TODO)
 ```
 
 ---
 
 **Created**: January 2024  
-**Last Updated**: January 2024  
-**Status**: Resident flow Step 6 complete ✅ (6/8 steps done)
+**Last Updated**: December 2024  
+**Status**: Resident flow Step 7 complete ✅ (7/8 steps done)

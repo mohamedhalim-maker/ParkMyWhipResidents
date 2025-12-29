@@ -70,7 +70,7 @@ class UploadDrivingLicensePage extends StatelessWidget {
                   const Spacer(),
 
                   // Step progress indicator (5/8 steps)
-                  const StepProgressIndicator(currentStep: 5, totalSteps: 8),
+                  const StepProgressIndicator(currentStep: 5, totalSteps: 7),
 
                   verticalSpace(16),
 

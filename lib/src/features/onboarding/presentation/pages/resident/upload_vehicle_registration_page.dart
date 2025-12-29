@@ -70,7 +70,7 @@ class UploadVehicleRegistrationPage extends StatelessWidget {
                   const Spacer(),
 
                   // Step progress indicator (6/8 steps)
-                  const StepProgressIndicator(currentStep: 6, totalSteps: 8),
+                  const StepProgressIndicator(currentStep: 6, totalSteps: 7),
 
                   verticalSpace(16),
 
@@ -85,8 +85,8 @@ class UploadVehicleRegistrationPage extends StatelessWidget {
                       ),
                       CommonButton(
                         text: OnboardingStrings.next,
-                        onPressed: () =>
-                            cubit.onContinueUploadRegistration(context: context),
+                        onPressed: () => cubit.onContinueUploadRegistration(
+                            context: context),
                         isEnabled: state.isButtonEnabled,
                         width: 110.w,
                       ),

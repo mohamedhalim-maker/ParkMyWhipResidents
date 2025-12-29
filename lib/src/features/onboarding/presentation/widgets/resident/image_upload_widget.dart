@@ -7,11 +7,13 @@ import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 
-/// Reusable widget for uploading documents/images
+/// Reusable widget for uploading documents/images (supports images and PDFs)
 ///
 /// Two states:
 /// 1. Empty state: custom icon + custom text + forward arrow
-/// 2. Uploaded state: Shows image preview + document icon + filename + close icon
+/// 2. Uploaded state:
+///    - For images: Shows image preview + document icon + filename + close icon
+///    - For PDFs: Shows document icon + filename + close icon (no visual preview)
 class ImageUploadWidget extends StatelessWidget {
   final File? image;
   final String? fileName;
@@ -20,6 +22,7 @@ class ImageUploadWidget extends StatelessWidget {
   final VoidCallback? onRemove;
   final IconData emptyStateIcon;
   final String emptyStateText;
+  final bool isImageFile;
 
   const ImageUploadWidget({
     super.key,
@@ -30,6 +33,7 @@ class ImageUploadWidget extends StatelessWidget {
     this.onRemove,
     this.emptyStateIcon = AppIcons.imageIcon,
     this.emptyStateText = OnboardingStrings.takePhotoOrUpload,
+    this.isImageFile = true,
   });
 
   bool get hasImage => image != null;
@@ -54,8 +58,8 @@ class ImageUploadWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (hasImage && image != null) ...[
-            // Image preview
+          if (hasImage && image != null && isImageFile) ...[
+            // Image preview (for actual image files)
             ClipRRect(
               borderRadius: BorderRadius.circular(16.r),
               child: Image.file(
@@ -67,6 +71,7 @@ class ImageUploadWidget extends StatelessWidget {
             ),
             verticalSpace(16),
           ],
+          // Note: For PDF files (!isImageFile), we don't show preview - only icon below
 
           // Upload container
           GestureDetector(

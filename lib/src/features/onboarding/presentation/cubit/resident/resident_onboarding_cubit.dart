@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
@@ -591,8 +592,8 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     // Reset button state for next page
     emit(state.copyWith(isButtonEnabled: false));
 
-    // TODO: Navigate to next step in resident flow
-    AppLogger.info('Resident Onboarding: Vehicle registration upload completed');
+    // Navigate to upload insurance page
+    Navigator.of(context).pushNamed(RoutesName.onboardingResidentStep7);
   }
 
   /// Clear vehicle registration data when navigating back
@@ -603,6 +604,178 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
       isButtonEnabled: true,
     ));
     AppLogger.info('Resident Onboarding: Cleared vehicle registration data');
+  }
+
+  // ==================== Insurance Upload ====================
+
+  /// Pick a file (image or PDF) from files
+  Future<File?> pickFile(BuildContext context) async {
+    try {
+      emit(state.copyWith(isLoadingImage: true));
+
+      // Pick file - file_picker supports images and PDFs
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      );
+
+      emit(state.copyWith(isLoadingImage: false));
+
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+
+        // Check file size (5 MB = 5 * 1024 * 1024 bytes)
+        final fileSize = await file.length();
+        const maxSize = 5 * 1024 * 1024; // 5 MB in bytes
+
+        if (fileSize > maxSize) {
+          if (context.mounted) {
+            await showErrorDialog(
+              context: context,
+              title: ImagePickerStrings.fileTooLarge,
+              message: ImagePickerStrings.fileSizeTooLargeMessage(
+                fileSize / (1024 * 1024),
+              ),
+            );
+          }
+          return null;
+        }
+
+        AppLogger.info('File picked: ${result.files.single.name}');
+        return file;
+      }
+
+      return null;
+    } catch (e) {
+      emit(state.copyWith(isLoadingImage: false));
+      AppLogger.error('Error picking file: $e');
+
+      if (context.mounted) {
+        await showErrorDialog(
+          context: context,
+          title: ImagePickerStrings.error,
+          message: ImagePickerStrings.failedToPickImage,
+        );
+      }
+
+      return null;
+    }
+  }
+
+  /// Handle insurance upload by showing image source bottom sheet + file option
+  void handleInsuranceUpload(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Choose File Source',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            ListTile(
+              leading: Icon(Icons.camera_alt),
+              title: Text('Camera'),
+              onTap: () async {
+                Navigator.pop(context);
+                final file = await pickImageFromCamera(context);
+                if (file != null) {
+                  final fileName = file.path.split('/').last;
+                  setInsuranceFile(file, fileName, isImage: true);
+                }
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library),
+              title: Text('Gallery'),
+              onTap: () async {
+                Navigator.pop(context);
+                final file = await pickImageFromGallery(context);
+                if (file != null) {
+                  final fileName = file.path.split('/').last;
+                  setInsuranceFile(file, fileName, isImage: true);
+                }
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.folder),
+              title: Text('Files (PDF, JPG, PNG)'),
+              onTap: () async {
+                Navigator.pop(context);
+                final file = await pickFile(context);
+                if (file != null) {
+                  final fileName = file.path.split('/').last;
+                  final isImage = fileName.toLowerCase().endsWith('.jpg') ||
+                      fileName.toLowerCase().endsWith('.jpeg') ||
+                      fileName.toLowerCase().endsWith('.png');
+                  setInsuranceFile(file, fileName, isImage: isImage);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Set the insurance file and filename
+  void setInsuranceFile(File file, String fileName, {required bool isImage}) {
+    emit(state.copyWith(
+      insuranceFile: () => file,
+      insuranceFileName: () => fileName,
+      insuranceIsImage: isImage,
+      isButtonEnabled: true,
+    ));
+    AppLogger.info('Resident Onboarding: Insurance file set - $fileName');
+  }
+
+  /// Remove the insurance file
+  void removeInsuranceFile() {
+    emit(state.copyWith(
+      insuranceFile: () => null,
+      insuranceFileName: () => null,
+      insuranceIsImage: true,
+      isButtonEnabled: false,
+    ));
+    AppLogger.info('Resident Onboarding: Insurance file removed');
+  }
+
+  /// Continue from upload insurance page
+  void onContinueUploadInsurance({required BuildContext context}) {
+    if (state.insuranceFile == null) {
+      return;
+    }
+
+    AppLogger.info(
+        'Resident Onboarding: Insurance uploaded - ${state.insuranceFileName}');
+
+    // Reset button state for next page
+    emit(state.copyWith(isButtonEnabled: false));
+
+    // TODO: Navigate to next step (Step 8 or submission)
+    AppLogger.info('Resident Onboarding: Insurance upload completed');
+  }
+
+  /// Clear insurance data when navigating back
+  void clearInsuranceData() {
+    emit(state.copyWith(
+      insuranceFile: () => null,
+      insuranceFileName: () => null,
+      insuranceIsImage: true,
+      isButtonEnabled: true,
+    ));
+    AppLogger.info('Resident Onboarding: Cleared insurance data');
   }
 
   // ==================== Back Navigation ====================

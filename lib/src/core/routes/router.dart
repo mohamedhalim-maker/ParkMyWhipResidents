@@ -29,6 +29,7 @@ import 'package:park_my_whip_residents/src/features/onboarding/presentation/page
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/add_vehicle_info_page.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/upload_driving_license_page.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/upload_vehicle_registration_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/upload_insurance_page.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class AppRouter {
@@ -88,7 +89,6 @@ class AppRouter {
 
   static Route<dynamic> generate(RouteSettings settings) {
     switch (settings.name) {
-
       case RoutesName.login:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
@@ -192,7 +192,7 @@ class AppRouter {
         final args = settings.arguments as Map<String, dynamic>?;
         final firstName = args?['firstName'] as String? ?? '';
         final lastName = args?['lastName'] as String? ?? '';
-        
+
         // Initialize resident cubit with user data
         final residentCubit = getIt<ResidentOnboardingCubit>();
         if (firstName.isNotEmpty && lastName.isNotEmpty) {
@@ -201,7 +201,7 @@ class AppRouter {
             lastName: lastName,
           );
         }
-        
+
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
             value: residentCubit,
@@ -246,6 +246,14 @@ class AppRouter {
           builder: (_) => BlocProvider.value(
             value: getIt<ResidentOnboardingCubit>(),
             child: const UploadVehicleRegistrationPage(),
+          ),
+        );
+
+      case RoutesName.onboardingResidentStep7:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<ResidentOnboardingCubit>(),
+            child: const UploadInsurancePage(),
           ),
         );
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
@@ -10,23 +11,17 @@ import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubi
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/contact_us_text.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/step_progress_indicator.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/vehicle_info_form.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/vehicle_info_header.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/image_upload_widget.dart';
 
-class AddVehicleInfoPage extends StatelessWidget {
-  const AddVehicleInfoPage({super.key});
+class UploadInsurancePage extends StatelessWidget {
+  const UploadInsurancePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (!didPop) {
-          final cubit = context.read<ResidentOnboardingCubit>();
-          final shouldNavigate = cubit.backFromVehicleInfo();
-          if (shouldNavigate) {
-            Navigator.of(context).pop();
-          }
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          context.read<ResidentOnboardingCubit>().clearInsuranceData();
         }
       },
       child: Scaffold(
@@ -41,41 +36,32 @@ class AddVehicleInfoPage extends StatelessWidget {
                 children: [
                   verticalSpace(60),
 
-                  // Step 4 label
-                  Text(
-                    OnboardingStrings.step4,
-                    style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
-                  ),
-
-                  verticalSpace(8),
-
                   // Page title
                   Text(
-                    OnboardingStrings.addYourVehicleInfo,
+                    OnboardingStrings.uploadYourInsurance,
                     style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
-                  ),
-
-                  verticalSpace(8),
-
-                  // Subtitle
-                  Text(
-                    OnboardingStrings.pleaseProvideYourVehicleDetails,
-                    style: AppTextStyles.urbanistFont14Gray800Regular1_4,
                   ),
 
                   verticalSpace(24),
-                  Visibility(
-                    visible: !state.showVehicleForm,
-                    child: VehicleInfoHeader(onTap: () {
-                      cubit.onVehicleHeaderTapped();
-                    }),
+
+                  // Insurance upload widget
+                  ImageUploadWidget(
+                    image: state.insuranceFile,
+                    fileName: state.insuranceFileName,
+                    isLoading: state.isLoadingImage,
+                    onTap: () => cubit.handleInsuranceUpload(context),
+                    onRemove: () => cubit.removeInsuranceFile(),
+                    emptyStateText: OnboardingStrings.attachFile,
+                    isImageFile: state.insuranceIsImage,
                   ),
-                  Visibility(
-                    visible: state.showVehicleForm,
-                    child: VehicleInfoForm(
-                      cubit: cubit,
-                      state: state,
-                    ),
+
+                  verticalSpace(8),
+
+                  // Max file size text
+                  Text(
+                    OnboardingStrings.maxFileSize,
+                    style: AppTextStyles.urbanistFont14Gray800Regular1_4
+                        .copyWith(color: AppColor.gray30),
                   ),
 
                   verticalSpace(8),
@@ -85,8 +71,8 @@ class AddVehicleInfoPage extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Step progress indicator (4/8 steps)
-                  const StepProgressIndicator(currentStep: 4, totalSteps: 7),
+                  // Step progress indicator (7/8 steps)
+                  const StepProgressIndicator(currentStep: 7, totalSteps: 7),
 
                   verticalSpace(16),
 
@@ -96,18 +82,13 @@ class AddVehicleInfoPage extends StatelessWidget {
                     children: [
                       CommonTextButton(
                         text: OnboardingStrings.back,
-                        onPressed: () {
-                          final shouldNavigate = cubit.backFromVehicleInfo();
-                          if (shouldNavigate) {
-                            Navigator.of(context).pop();
-                          }
-                        },
+                        onPressed: () => Navigator.of(context).pop(),
                         width: 110.w,
                       ),
                       CommonButton(
                         text: OnboardingStrings.next,
                         onPressed: () =>
-                            cubit.onContinueAddVehicleInfo(context: context),
+                            cubit.onContinueUploadInsurance(context: context),
                         isEnabled: state.isButtonEnabled,
                         width: 110.w,
                       ),

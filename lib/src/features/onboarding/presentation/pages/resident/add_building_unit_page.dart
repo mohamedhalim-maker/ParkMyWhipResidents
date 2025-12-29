@@ -34,111 +34,111 @@ class AddBuildingUnitPage extends StatelessWidget {
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w),
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  verticalSpace(60),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    verticalSpace(60),
 
-                  // Step text
-                  Text(
-                    OnboardingStrings.step2,
-                    style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
-                  ),
-
-                  verticalSpace(8),
-
-                  // Title
-                  Text(
-                    OnboardingStrings.addYourHostBuildingAndUnitNumber,
-                    style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
-                  ),
-
-                  // verticalSpace(8),
-
-                  // // Subtitle
-                  // Text(
-                  //   OnboardingStrings.addBuildingUnitSubtitle,
-                  //   style: AppTextStyles.urbanistFont14Grey700Regular1_28,
-                  // ),
-
-                  verticalSpace(24),
-
-                  // Unit Number Field
-                  CustomTextField(
-                    title: '',
-                    hintText: OnboardingStrings.unitNumberHint,
-                    controller: cubit.unitNumberController,
-                    validator: (_) => state.unitNumberError,
-                    onChanged: (_) => cubit.onUnitNumberChanged(),
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.next,
-                    showError: false,
-                    showTitle: false,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16.r),
-                      topRight: Radius.circular(16.r),
+                    // Step text
+                    Text(
+                      OnboardingStrings.step2,
+                      style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
                     ),
-                  ),
 
-                  // Building Number Field
-                  CustomTextField(
-                    title: '',
-                    hintText: OnboardingStrings.buildingNumberHint,
-                    controller: cubit.buildingNumberController,
-                    validator: (_) => state.buildingNumberError,
-                    onChanged: (_) => cubit.onBuildingNumberChanged(),
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    showError: false,
-                    showTitle: false,
-                     borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(16.r),
-                      bottomRight: Radius.circular(16.r),
+                    verticalSpace(8),
+
+                    // Title
+                    Text(
+                      OnboardingStrings.addYourHostBuildingAndUnitNumber,
+                      style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
                     ),
-                  ),
 
-                  verticalSpace(16),
+                    // verticalSpace(8),
 
-                  // Contact us text
-                  ContactUsText(),
+                    // // Subtitle
+                    // Text(
+                    //   OnboardingStrings.addBuildingUnitSubtitle,
+                    //   style: AppTextStyles.urbanistFont14Grey700Regular1_28,
+                    // ),
 
-                  Spacer(),
+                    verticalSpace(24),
 
-                  // Step progress indicator
-                  StepProgressIndicator(currentStep: 2, totalSteps: 8),
-
-                  verticalSpace(16),
-
-                  // Back and Next buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Back button
-                      CommonTextButton(
-                        text: OnboardingStrings.back,
-                        onPressed: () {
-                          cubit.clearBuildingUnitData();
-                          Navigator.of(context).pop();
-                        },
-                        width: 110.w,
+                    // Unit Number Field
+                    CustomTextField(
+                      title: '',
+                      hintText: OnboardingStrings.unitNumberHint,
+                      controller: cubit.unitNumberController,
+                      validator: (_) => state.unitNumberError,
+                      onChanged: (_) => cubit.onUnitNumberChanged(),
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
+                      showError: false,
+                      showTitle: false,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16.r),
+                        topRight: Radius.circular(16.r),
                       ),
+                    ),
 
-                      // Next button
-                      CommonButton(
-                        text: OnboardingStrings.next,
-                        onPressed: () =>
-                            cubit.onContinueAddBuildingUnit(context: context),
-                        isEnabled: state.isButtonEnabled,
-                        width: 110.w,
+                    // Building Number Field
+                    CustomTextField(
+                      title: '',
+                      hintText: OnboardingStrings.buildingNumberHint,
+                      controller: cubit.buildingNumberController,
+                      validator: (_) => state.buildingNumberError,
+                      onChanged: (_) => cubit.onBuildingNumberChanged(),
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      showError: false,
+                      showTitle: false,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(16.r),
+                        bottomRight: Radius.circular(16.r),
                       ),
-                    ],
-                  ),
+                    ),
 
-                  verticalSpace(24),
-                ],
-              ),
-            );
-          },
-        ),
+                    verticalSpace(16),
+
+                    // Contact us text
+                    ContactUsText(),
+
+                    Spacer(),
+
+                    // Step progress indicator
+                    StepProgressIndicator(currentStep: 2, totalSteps: 7),
+
+                    verticalSpace(16),
+
+                    // Back and Next buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Back button
+                        CommonTextButton(
+                          text: OnboardingStrings.back,
+                          onPressed: () {
+                            cubit.clearBuildingUnitData();
+                            Navigator.of(context).pop();
+                          },
+                          width: 110.w,
+                        ),
+
+                        // Next button
+                        CommonButton(
+                          text: OnboardingStrings.next,
+                          onPressed: () =>
+                              cubit.onContinueAddBuildingUnit(context: context),
+                          isEnabled: state.isButtonEnabled,
+                          width: 110.w,
+                        ),
+                      ],
+                    ),
+
+                    verticalSpace(24),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
