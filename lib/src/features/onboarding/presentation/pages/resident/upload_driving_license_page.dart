@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
@@ -14,7 +12,7 @@ import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubi
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/contact_us_text.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/step_progress_indicator.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/license_upload_widget.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/image_upload_widget.dart';
 
 class UploadDrivingLicensePage extends StatelessWidget {
   const UploadDrivingLicensePage({super.key});
@@ -26,8 +24,15 @@ class UploadDrivingLicensePage extends StatelessWidget {
   ) {
     showImageSourceBottomSheet(
       context: context,
-      onSourceSelected: (source) async {
-        final file = await cubit.pickImage(source, context);
+      onCameraTap: () async {
+        final file = await cubit.pickImageFromCamera(context);
+        if (file != null) {
+          final fileName = file.path.split('/').last;
+          cubit.setLicenseImage(file, fileName);
+        }
+      },
+      onGalleryTap: () async {
+        final file = await cubit.pickImageFromGallery(context);
         if (file != null) {
           final fileName = file.path.split('/').last;
           cubit.setLicenseImage(file, fileName);
@@ -65,9 +70,9 @@ class UploadDrivingLicensePage extends StatelessWidget {
                   verticalSpace(24),
 
                   // License upload widget
-                  LicenseUploadWidget(
-                    licenseImage: state.licenseImage,
-                    licenseFileName: state.licenseFileName,
+                  ImageUploadWidget(
+                    image: state.licenseImage,
+                    fileName: state.licenseFileName,
                     isLoading: state.isLoadingImage,
                     onTap: () => _handleLicenseUpload(context, cubit),
                     onRemove: () => cubit.removeLicenseImage(),

@@ -4,6 +4,25 @@ import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 
+/// Shows a general error dialog with customizable title and message
+Future<void> showErrorDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+  String buttonText = 'OK',
+  VoidCallback? onDismiss,
+}) {
+  return showDialog(
+    context: context,
+    builder: (context) => ErrorDialog(
+      title: title,
+      errorMessage: message,
+      buttonText: buttonText,
+      onDismiss: onDismiss,
+    ),
+  );
+}
+
 /// Reusable error dialog that follows the app's design system
 /// Used for displaying backend errors when there's no UI space for inline error messages
 class ErrorDialog extends StatelessWidget {
@@ -11,11 +30,13 @@ class ErrorDialog extends StatelessWidget {
     super.key,
     required this.errorMessage,
     this.title = 'Error',
+    this.buttonText = 'OK',
     this.onDismiss,
   });
 
   final String errorMessage;
   final String title;
+  final String buttonText;
   final VoidCallback? onDismiss;
 
   @override
@@ -79,7 +100,7 @@ class ErrorDialog extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: Text(
-                  'OK',
+                  buttonText,
                   style: AppTextStyles.urbanistFont16WhiteRegular1_375,
                 ),
               ),

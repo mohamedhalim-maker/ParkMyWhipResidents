@@ -222,7 +222,16 @@ class ImagePickerStrings {
   static const String permissionRequired = 'Permission Required';
   static const String cancel = 'Cancel';
   static const String openSettings = 'Open Settings';
-  
+
+  // Error messages
+  static const String fileTooLarge = 'File Too Large';
+  static const String error = 'Error';
+  static const String failedToPickImage =
+      'Failed to pick image. Please try again.';
+
   static String cameraPermissionMessage(String permissionName) =>
       'Please enable $permissionName permission in your device settings to continue.';
+
+  static String fileSizeTooLargeMessage(double fileSizeMB) =>
+      'Please choose an image smaller than 5 MB. Selected image size: ${fileSizeMB.toStringAsFixed(2)} MB';
 }

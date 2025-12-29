@@ -10,7 +10,8 @@ import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 /// Shows a bottom sheet for selecting image source (gallery or camera)
 void showImageSourceBottomSheet({
   required BuildContext context,
-  required Function(ImageSource) onSourceSelected,
+  required VoidCallback onCameraTap,
+  required VoidCallback onGalleryTap,
 }) {
   showModalBottomSheet(
     context: context,
@@ -19,15 +20,20 @@ void showImageSourceBottomSheet({
       borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
     ),
     builder: (sheetContext) => _ImageSourceBottomSheet(
-      onSourceSelected: onSourceSelected,
+      onCameraTap: onCameraTap,
+      onGalleryTap: onGalleryTap,
     ),
   );
 }
 
 class _ImageSourceBottomSheet extends StatelessWidget {
-  final Function(ImageSource) onSourceSelected;
+  final VoidCallback onCameraTap;
+  final VoidCallback onGalleryTap;
 
-  const _ImageSourceBottomSheet({required this.onSourceSelected});
+  const _ImageSourceBottomSheet({
+    required this.onCameraTap,
+    required this.onGalleryTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +68,11 @@ class _ImageSourceBottomSheet extends StatelessWidget {
 
           // Gallery option
           _ImageSourceOption(
-            icon: AppIcons.imageIcon,
+            icon: Icons.photo_library,
             label: ImagePickerStrings.gallery,
             onTap: () {
               Navigator.pop(context);
-              onSourceSelected(ImageSource.gallery);
+              onGalleryTap();
             },
           ),
 
@@ -74,11 +80,11 @@ class _ImageSourceBottomSheet extends StatelessWidget {
 
           // Camera option
           _ImageSourceOption(
-            icon: AppIcons.imageIcon,
+            icon: Icons.camera_alt,
             label: ImagePickerStrings.camera,
             onTap: () {
               Navigator.pop(context);
-              onSourceSelected(ImageSource.camera);
+              onCameraTap();
             },
           ),
 

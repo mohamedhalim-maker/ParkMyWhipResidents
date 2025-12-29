@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
+import 'package:park_my_whip_residents/src/core/widgets/error_dialog.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/data/models/permit_plan_model.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
@@ -399,48 +399,23 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
 
   final ImagePicker _imagePicker = ImagePicker();
 
+  /// Pick an image from camera
+  Future<File?> pickImageFromCamera(BuildContext context) async {
+    return pickImage(ImageSource.camera, context);
+  }
+
+  /// Pick an image from gallery
+  Future<File?> pickImageFromGallery(BuildContext context) async {
+    return pickImage(ImageSource.gallery, context);
+  }
+
   /// Pick an image from gallery or camera
   /// Returns the picked image file or null if cancelled/failed
   Future<File?> pickImage(ImageSource source, BuildContext context) async {
     try {
       emit(state.copyWith(isLoadingImage: true));
 
-      // Determine which permission to request
-      Permission permission;
-      String permissionName;
-      
-      if (source == ImageSource.camera) {
-        permission = Permission.camera;
-        permissionName = 'Camera';
-      } else {
-        permission = Permission.photos;
-        permissionName = 'Gallery';
-      }
-
-      // Check and request permission
-      PermissionStatus status = await permission.status;
-      
-      if (status.isDenied) {
-        status = await permission.request();
-      }
-
-      if (status.isPermanentlyDenied) {
-        emit(state.copyWith(isLoadingImage: false));
-        
-        // Show dialog to guide user to settings
-        if (context.mounted) {
-          await _showPermissionDeniedDialog(context, permissionName);
-        }
-        return null;
-      }
-
-      if (status.isDenied) {
-        emit(state.copyWith(isLoadingImage: false));
-        AppLogger.info('$permissionName permission denied');
-        return null;
-      }
-
-      // Pick image
+      // Pick image - image_picker handles permissions automatically
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: source,
         imageQuality: 85,
@@ -452,8 +427,25 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
+
+        // Check file size (5 MB = 5 * 1024 * 1024 bytes)
+        final fileSize = await file.length();
+        const maxSize = 5 * 1024 * 1024; // 5 MB in bytes
+
+        if (fileSize > maxSize) {
+          if (context.mounted) {
+            await showErrorDialog(
+              context: context,
+              title: ImagePickerStrings.fileTooLarge,
+              message: ImagePickerStrings.fileSizeTooLargeMessage(
+                fileSize / (1024 * 1024),
+              ),
+            );
+          }
+          return null;
+        }
+
         final fileName = pickedFile.name;
-        
         AppLogger.info('Image picked: $fileName');
         return file;
       }
@@ -462,37 +454,17 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     } catch (e) {
       emit(state.copyWith(isLoadingImage: false));
       AppLogger.error('Error picking image: $e');
+
+      if (context.mounted) {
+        await showErrorDialog(
+          context: context,
+          title: ImagePickerStrings.error,
+          message: ImagePickerStrings.failedToPickImage,
+        );
+      }
+
       return null;
     }
-  }
-
-  /// Show dialog when permission is permanently denied
-  Future<void> _showPermissionDeniedDialog(
-    BuildContext context,
-    String permissionName,
-  ) async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('$permissionName ${ImagePickerStrings.permissionRequired}'),
-        content: Text(
-          ImagePickerStrings.cameraPermissionMessage(permissionName),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(ImagePickerStrings.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              openAppSettings();
-            },
-            child: Text(ImagePickerStrings.openSettings),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Set the license image and filename

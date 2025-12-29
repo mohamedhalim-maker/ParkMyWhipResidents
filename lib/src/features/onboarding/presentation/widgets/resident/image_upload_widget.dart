@@ -7,28 +7,32 @@ import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 
-/// Reusable widget for uploading driving license
+/// Reusable widget for uploading documents/images
 ///
 /// Two states:
-/// 1. Empty state: imageIcon + "Take Photo or Upload" + forward arrow
+/// 1. Empty state: custom icon + custom text + forward arrow
 /// 2. Uploaded state: Shows image preview + document icon + filename + close icon
-class LicenseUploadWidget extends StatelessWidget {
-  final File? licenseImage;
-  final String? licenseFileName;
+class ImageUploadWidget extends StatelessWidget {
+  final File? image;
+  final String? fileName;
   final bool isLoading;
   final VoidCallback onTap;
   final VoidCallback? onRemove;
+  final IconData emptyStateIcon;
+  final String emptyStateText;
 
-  const LicenseUploadWidget({
+  const ImageUploadWidget({
     super.key,
-    this.licenseImage,
-    this.licenseFileName,
+    this.image,
+    this.fileName,
     this.isLoading = false,
     required this.onTap,
     this.onRemove,
+    this.emptyStateIcon = AppIcons.imageIcon,
+    this.emptyStateText = OnboardingStrings.takePhotoOrUpload,
   });
 
-  bool get hasLicense => licenseImage != null;
+  bool get hasImage => image != null;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +40,8 @@ class LicenseUploadWidget extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
       decoration: BoxDecoration(
         color: AppColor.white,
-        border: Border.all(color: AppColor.redAlerts.withValues(alpha: 0.4), width: 0.5.w),
+        border: Border.all(
+            color: AppColor.redAlerts.withValues(alpha: 0.4), width: 0.5.w),
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
@@ -49,12 +54,12 @@ class LicenseUploadWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (hasLicense && licenseImage != null) ...[
+          if (hasImage && image != null) ...[
             // Image preview
             ClipRRect(
               borderRadius: BorderRadius.circular(16.r),
               child: Image.file(
-                licenseImage!,
+                image!,
                 width: double.infinity,
                 height: 200.h,
                 fit: BoxFit.cover,
@@ -65,7 +70,7 @@ class LicenseUploadWidget extends StatelessWidget {
 
           // Upload container
           GestureDetector(
-            onTap: hasLicense || isLoading ? null : onTap,
+            onTap: hasImage || isLoading ? null : onTap,
             child: Row(
               children: [
                 // Left icon with red container
@@ -85,7 +90,7 @@ class LicenseUploadWidget extends StatelessWidget {
                           ),
                         )
                       : Icon(
-                          hasLicense ? AppIcons.document : AppIcons.imageIcon,
+                          hasImage ? AppIcons.document : emptyStateIcon,
                           color: AppColor.richRed,
                           size: 20.w,
                         ),
@@ -98,9 +103,9 @@ class LicenseUploadWidget extends StatelessWidget {
                   child: Text(
                     isLoading
                         ? 'Loading...'
-                        : hasLicense && licenseFileName != null
-                            ? licenseFileName!
-                            : OnboardingStrings.takePhotoOrUpload,
+                        : hasImage && fileName != null
+                            ? fileName!
+                            : emptyStateText,
                     style: AppTextStyles.urbanistFont14RedDarkMedium1,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -112,11 +117,11 @@ class LicenseUploadWidget extends StatelessWidget {
                 // Right icon
                 if (!isLoading)
                   GestureDetector(
-                    onTap: hasLicense ? onRemove : null,
+                    onTap: hasImage ? onRemove : null,
                     child: Icon(
-                      hasLicense ? AppIcons.close : AppIcons.forwardIcon,
+                      hasImage ? AppIcons.close : AppIcons.forwardIcon,
                       color: AppColor.redDark,
-                      size: 18.w,
+                      size: hasImage ? 12.w : 18.w,
                     ),
                   ),
               ],
