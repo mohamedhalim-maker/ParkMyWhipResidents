@@ -437,4 +437,44 @@ class AppTextStyles {
     height: 1.5, // 150%
     letterSpacing: 0,
   );
+
+  static TextStyle urbanistFont16Grey800Medium1_2 = GoogleFonts.urbanist(
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.medium,
+    color: AppColor.grey800,
+    height: 1.2, // 120%
+    letterSpacing: 0,
+  );
+
+  static TextStyle urbanistFont16Grey400Medium1_2 = GoogleFonts.urbanist(
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.medium,
+    color: AppColor.grey400,
+    height: 1.2, // 120%
+    letterSpacing: 0,
+  );
+
+  static TextStyle urbanistFont16Grey800SemiBold1_2 = GoogleFonts.urbanist(
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.semiBold,
+    color: AppColor.grey800,
+    height: 1.2, // 120%
+    letterSpacing: 0,
+  );
+
+  static TextStyle urbanistFont16Grey700Regular = GoogleFonts.urbanist(
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.regular,
+    color: AppColor.grey700, // #364753
+    height: 1.2, // 120%
+    letterSpacing: 0,
+  );
+
+  static TextStyle urbanistFont16RedSemiBold = GoogleFonts.urbanist(
+    fontSize: 16.sp,
+    fontWeight: FontWeightHelper.semiBold,
+    color: AppColor.red, // #F73541
+    height: 1.2, // 120%
+    letterSpacing: 0,
+  );
 }

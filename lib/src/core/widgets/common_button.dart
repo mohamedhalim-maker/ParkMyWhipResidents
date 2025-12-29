@@ -13,6 +13,7 @@ class CommonButton extends StatelessWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.color,
+    this.width = double.infinity,
   });
 
   final String text;
@@ -21,12 +22,13 @@ class CommonButton extends StatelessWidget {
   final IconData? leadingIcon;
   final IconData? trailingIcon;
   final Color? color;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 48.h,
-      width: double.infinity,
+      width: width,
       child: ElevatedButton(
         onPressed: isEnabled ? onPressed : null,
         style: ElevatedButton.styleFrom(

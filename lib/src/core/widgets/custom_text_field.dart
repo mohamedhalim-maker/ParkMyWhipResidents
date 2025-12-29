@@ -6,7 +6,7 @@ import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 
 class CustomTextField extends StatefulWidget {
-  const CustomTextField({
+  CustomTextField({
     super.key,
     required this.title,
     required this.hintText,
@@ -18,7 +18,10 @@ class CustomTextField extends StatefulWidget {
     this.onChanged,
     this.maxLines = 1,
     this.maxLength,
-  });
+    this.showError = true,
+    BorderRadius? borderRadius,
+    this.showTitle = true,
+  }) : borderRadius = borderRadius ?? BorderRadius.circular(10);
 
   final String title;
   final String hintText;
@@ -34,6 +37,15 @@ class CustomTextField extends StatefulWidget {
 
   /// Maximum number of characters allowed (optional, no limit if null)
   final int? maxLength;
+
+  /// Whether to show error message below field (default: true)
+  final bool showError;
+
+  /// Custom border radius for all corners (optional, defaults to BorderRadius.circular(10))
+  final BorderRadius borderRadius;
+
+  /// Whether to show title label above field (default: true)
+  final bool showTitle;
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -77,12 +89,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title
-        Text(
-          widget.title,
-          style: AppTextStyles.urbanistFont14Grey700Regular1_28,
-        ),
-        verticalSpace(4),
+        // Title (conditionally shown)
+        if (widget.showTitle) ...[
+          Text(
+            widget.title,
+            style: AppTextStyles.urbanistFont14Grey700Regular1_28,
+          ),
+          verticalSpace(4),
+        ],
 
         // Text Field
         TextFormField(
@@ -110,29 +124,29 @@ class _CustomTextFieldState extends State<CustomTextField> {
             hintStyle: AppTextStyles.urbanistFont16Grey800Opacity40Regular1_3,
             contentPadding: EdgeInsets.all(12.w),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10.r),
+              borderRadius: widget.borderRadius,
               borderSide: BorderSide(color: AppColor.grey300, width: 1.w),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10.r),
+              borderRadius: widget.borderRadius,
               borderSide: BorderSide(
-                color: hasError ? AppColor.red500 : AppColor.grey300,
+                color: hasError && widget.showError ? AppColor.red500 : AppColor.grey300,
                 width: 1.w,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10.r),
+              borderRadius: widget.borderRadius,
               borderSide: BorderSide(
-                color: hasError ? AppColor.red500 : AppColor.grey800,
+                color: hasError && widget.showError ? AppColor.red500 : AppColor.grey800,
                 width: 1.w,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10.r),
+              borderRadius: widget.borderRadius,
               borderSide: BorderSide(color: AppColor.red500, width: 1.w),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10.r),
+              borderRadius: widget.borderRadius,
               borderSide: BorderSide(color: AppColor.red500, width: 1.w),
             ),
             suffixIcon: widget.isPassword
@@ -155,7 +169,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         ),
 
         // Character Counter (shown when focused and maxLength is set)
-        if (_isFocused && widget.maxLength != null) ...[
+        if (_isFocused && widget.maxLength != null&&widget.showError) ...[
           verticalSpace(4),
           Align(
             alignment: Alignment.centerRight,
@@ -166,8 +180,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
           ),
         ],
 
-        // Error Message
-        if (hasError) ...[
+        // Error Message (only shown if showError is true)
+        if (hasError && widget.showError) ...[
           verticalSpace(4),
           Text(
             errorMessage,

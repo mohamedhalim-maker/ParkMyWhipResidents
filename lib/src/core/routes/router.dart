@@ -19,6 +19,14 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forg
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/reset_password_page.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/password_reset_success_page.dart';
 import 'package:park_my_whip_residents/src/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/general/general_onboarding_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/user_name_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/user_type_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/setup_address_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/add_building_unit_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/select_permit_plan_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/add_vehicle_info_page.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class AppRouter {
@@ -59,7 +67,7 @@ class AppRouter {
           '⚠️ Recovery flag detected - forcing login route '
           '(sign-out in progress)',
         );
-        return RoutesName.login;
+        return RoutesName.initial;
       }
 
       // Normal flow: check session
@@ -69,16 +77,16 @@ class AppRouter {
       }
 
       AppLogger.navigation('No session - routing to login');
-      return RoutesName.login;
+      return RoutesName.initial;
     } catch (e) {
       AppLogger.error('Error determining initial route', error: e);
-      return RoutesName.login;
+      return RoutesName.initial;
     }
   }
 
   static Route<dynamic> generate(RouteSettings settings) {
     switch (settings.name) {
-      case RoutesName.initial:
+
       case RoutesName.login:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
@@ -158,6 +166,68 @@ class AppRouter {
           builder: (_) => BlocProvider.value(
             value: getIt<ForgotPasswordCubit>(),
             child: const PasswordResetSuccessPage(),
+          ),
+        );
+      case RoutesName.initial:
+      case RoutesName.onboardingStep1:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<GeneralOnboardingCubit>(),
+            child: const UserNamePage(),
+          ),
+        );
+
+      case RoutesName.onboardingStep2:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<GeneralOnboardingCubit>(),
+            child: const UserTypePage(),
+          ),
+        );
+
+      case RoutesName.onboardingResidentStep1:
+        // Extract user data from arguments
+        final args = settings.arguments as Map<String, dynamic>?;
+        final firstName = args?['firstName'] as String? ?? '';
+        final lastName = args?['lastName'] as String? ?? '';
+        
+        // Initialize resident cubit with user data
+        final residentCubit = getIt<ResidentOnboardingCubit>();
+        if (firstName.isNotEmpty && lastName.isNotEmpty) {
+          residentCubit.initializeWithUserData(
+            firstName: firstName,
+            lastName: lastName,
+          );
+        }
+        
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: residentCubit,
+            child: const SetupAddressPage(),
+          ),
+        );
+
+      case RoutesName.onboardingResidentStep2:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<ResidentOnboardingCubit>(),
+            child: const AddBuildingUnitPage(),
+          ),
+        );
+
+      case RoutesName.onboardingResidentStep3:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<ResidentOnboardingCubit>(),
+            child: const SelectPermitPlanPage(),
+          ),
+        );
+
+      case RoutesName.onboardingResidentStep4:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<ResidentOnboardingCubit>(),
+            child: const AddVehicleInfoPage(),
           ),
         );
 
