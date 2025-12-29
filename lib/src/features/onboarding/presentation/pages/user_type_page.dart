@@ -5,7 +5,6 @@ import 'package:park_my_whip_residents/src/core/constants/app_icons.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
-import 'package:park_my_whip_residents/src/core/widgets/common_app_bar.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/general/general_onboarding_cubit.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/general/general_onboarding_state.dart';
@@ -22,13 +21,13 @@ class UserTypePage extends StatelessWidget {
       body: BlocBuilder<GeneralOnboardingCubit, GeneralOnboardingState>(
         builder: (context, state) {
           final cubit = context.read<GeneralOnboardingCubit>();
-          
+
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                verticalSpace(12),
+                verticalSpace(30),
 
                 // Title
                 Text(
@@ -66,7 +65,6 @@ class UserTypePage extends StatelessWidget {
                   onTap: () => cubit.onUserTypeChanged('visitor'),
                 ),
 
-              
                 verticalSpace(16),
 
                 // Contact us text
@@ -90,4 +88,3 @@ class UserTypePage extends StatelessWidget {
     );
   }
 }
-

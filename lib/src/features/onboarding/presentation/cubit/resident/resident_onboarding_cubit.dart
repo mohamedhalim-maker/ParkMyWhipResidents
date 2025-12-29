@@ -7,14 +7,14 @@ import 'package:park_my_whip_residents/src/features/onboarding/domain/validators
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
 
 /// Cubit managing the resident onboarding flow.
-/// 
+///
 /// Responsibilities:
 /// - Manage community selection with search and filtering
 /// - Handle address setup
 /// - Navigate through resident-specific steps
 /// - Accumulate resident data across steps
 /// - Submit final resident onboarding data to backend
-/// 
+///
 /// This is a SINGLETON cubit (registered with registerLazySingleton)
 /// so the same instance is shared across all resident onboarding pages.
 class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
@@ -36,19 +36,18 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
 
   // ==================== Controllers ====================
   final TextEditingController unitNumberController = TextEditingController();
-  final TextEditingController buildingNumberController = TextEditingController();
+  final TextEditingController buildingNumberController =
+      TextEditingController();
   final TextEditingController plateNumberController = TextEditingController();
   final TextEditingController vehicleMakeController = TextEditingController();
   final TextEditingController vehicleModelController = TextEditingController();
   final TextEditingController vehicleColorController = TextEditingController();
-  
-  // Selected vehicle year from dropdown
-  int? selectedVehicleYear;
+  final TextEditingController vehicleYearController = TextEditingController();
 
   ResidentOnboardingCubit() : super(const ResidentOnboardingState()) {
     // Initialize filtered communities with all communities
     emit(state.copyWith(filteredCommunities: _allCommunities));
-    
+
     // Listen to text field changes to enable/disable button
     unitNumberController.addListener(_updateButtonStateForBuildingUnit);
     buildingNumberController.addListener(_updateButtonStateForBuildingUnit);
@@ -56,6 +55,18 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     vehicleMakeController.addListener(_updateButtonStateForVehicle);
     vehicleModelController.addListener(_updateButtonStateForVehicle);
     vehicleColorController.addListener(_updateButtonStateForVehicle);
+  }
+
+  // ==================== Helper Methods ====================
+
+  /// Generic method to clear error if present
+  void _clearErrorIfPresent({
+    required String? currentError,
+    required VoidCallback clearError,
+  }) {
+    if (currentError != null) {
+      clearError();
+    }
   }
 
   // ==================== Initialization ====================
@@ -67,7 +78,8 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
   }) {
     this.firstName = firstName;
     this.lastName = lastName;
-    AppLogger.info('Resident Onboarding: Initialized with user $firstName $lastName');
+    AppLogger.info(
+        'Resident Onboarding: Initialized with user $firstName $lastName');
   }
 
   // ==================== Community Selection ====================
@@ -75,7 +87,7 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
   /// Handle choose community tap - shows bottom sheet
   void onChooseCommunityTapped({required BuildContext context}) {
     AppLogger.info('Resident Onboarding: Choose community tapped');
-    
+
     // Reset search and temp selection when opening bottom sheet
     emit(state.copyWith(
       communitySearchQuery: '',
@@ -92,7 +104,7 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
             .where((community) =>
                 community.toLowerCase().contains(query.toLowerCase()))
             .toList();
-    
+
     emit(state.copyWith(
       communitySearchQuery: query,
       filteredCommunities: filtered,
@@ -113,7 +125,8 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
         selectedCommunity: state.tempSelectedCommunity,
         isButtonEnabled: true,
       ));
-      AppLogger.info('Resident Onboarding: Community saved - ${state.tempSelectedCommunity}');
+      AppLogger.info(
+          'Resident Onboarding: Community saved - ${state.tempSelectedCommunity}');
     }
   }
 
@@ -122,12 +135,13 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     if (state.selectedCommunity == null) {
       return;
     }
-    
-    AppLogger.info('Resident Onboarding: Selected community - ${state.selectedCommunity}');
-    
+
+    AppLogger.info(
+        'Resident Onboarding: Selected community - ${state.selectedCommunity}');
+
     // Reset button state for next page
     emit(state.copyWith(isButtonEnabled: false));
-    
+
     // Navigate to add building & unit page
     Navigator.of(context).pushNamed(RoutesName.onboardingResidentStep2);
   }
@@ -144,33 +158,37 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
 
   /// Check if building and unit number fields are valid (no validation errors)
   bool _isBuildingUnitValid() {
-    final unitError = OnboardingValidators.validateNumber(unitNumberController.text);
-    final buildingError = OnboardingValidators.validateNumber(buildingNumberController.text);
+    final unitError =
+        OnboardingValidators.validateNumber(unitNumberController.text);
+    final buildingError =
+        OnboardingValidators.validateNumber(buildingNumberController.text);
     return unitError == null && buildingError == null;
   }
 
   /// Handle unit number field change
   void onUnitNumberChanged() {
-    // Clear error when user types
-    if (state.unitNumberError != null) {
-      emit(state.copyWith(unitNumberError: () => null));
-    }
+    _clearErrorIfPresent(
+      currentError: state.unitNumberError,
+      clearError: () => emit(state.copyWith(unitNumberError: () => null)),
+    );
   }
 
   /// Handle building number field change
   void onBuildingNumberChanged() {
-    // Clear error when user types
-    if (state.buildingNumberError != null) {
-      emit(state.copyWith(buildingNumberError: () => null));
-    }
+    _clearErrorIfPresent(
+      currentError: state.buildingNumberError,
+      clearError: () => emit(state.copyWith(buildingNumberError: () => null)),
+    );
   }
 
   /// Continue from add building & unit page
   void onContinueAddBuildingUnit({required BuildContext context}) {
     // Validate both fields
-    final unitError = OnboardingValidators.validateNumber(unitNumberController.text);
-    final buildingError = OnboardingValidators.validateNumber(buildingNumberController.text);
-    
+    final unitError =
+        OnboardingValidators.validateNumber(unitNumberController.text);
+    final buildingError =
+        OnboardingValidators.validateNumber(buildingNumberController.text);
+
     // If there are any errors, show red borders (no error messages)
     if (unitError != null || buildingError != null) {
       emit(state.copyWith(
@@ -179,18 +197,19 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
       ));
       return;
     }
-    
+
     // Clear any existing errors
     emit(state.copyWith(
       unitNumberError: () => null,
       buildingNumberError: () => null,
     ));
-    
-    AppLogger.info('Resident Onboarding: Unit ${unitNumberController.text}, Building ${buildingNumberController.text}');
-    
+
+    AppLogger.info(
+        'Resident Onboarding: Unit ${unitNumberController.text}, Building ${buildingNumberController.text}');
+
     // Reset button state for next page
     emit(state.copyWith(isButtonEnabled: false));
-    
+
     // Navigate to select permit plan page
     Navigator.of(context).pushNamed(RoutesName.onboardingResidentStep3);
   }
@@ -203,7 +222,8 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
       selectedPermitPlan: () => plan,
       isButtonEnabled: true,
     ));
-    AppLogger.info('Resident Onboarding: Selected permit plan - ${plan.period} (\$${plan.price})');
+    AppLogger.info(
+        'Resident Onboarding: Selected permit plan - ${plan.period} (\$${plan.price})');
   }
 
   /// Continue from select permit plan page
@@ -211,12 +231,13 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     if (state.selectedPermitPlan == null) {
       return;
     }
-    
-    AppLogger.info('Resident Onboarding: Selected permit plan - ${state.selectedPermitPlan?.period}');
-    
+
+    AppLogger.info(
+        'Resident Onboarding: Selected permit plan - ${state.selectedPermitPlan?.period}');
+
     // Reset button state for next page
     emit(state.copyWith(isButtonEnabled: false));
-    
+
     // Navigate to add vehicle info page
     Navigator.of(context).pushNamed(RoutesName.onboardingResidentStep4);
   }
@@ -240,89 +261,88 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     }
   }
 
+  void onVehicleHeaderTapped() {
+    emit(state.copyWith(showVehicleForm: true));
+  }
+
   /// Check if all vehicle form fields are valid
   bool _isVehicleFormValid() {
-    final plateError = OnboardingValidators.validatePlateNumber(plateNumberController.text);
-    final makeError = OnboardingValidators.validateVehicleField(vehicleMakeController.text);
-    final modelError = OnboardingValidators.validateVehicleField(vehicleModelController.text);
-    final colorError = OnboardingValidators.validateVehicleColor(vehicleColorController.text);
-    
-    return plateError == null && 
-           makeError == null && 
-           modelError == null && 
-           colorError == null && 
-           selectedVehicleYear != null;
+    final plateError =
+        OnboardingValidators.validatePlateNumber(plateNumberController.text);
+    final makeError =
+        OnboardingValidators.validateVehicleField(vehicleMakeController.text);
+    final modelError =
+        OnboardingValidators.validateVehicleField(vehicleModelController.text);
+    final colorError =
+        OnboardingValidators.validateVehicleColor(vehicleColorController.text);
+    final yearError =
+        OnboardingValidators.validateVehicleYear(vehicleYearController.text);
+
+    return plateError == null &&
+        makeError == null &&
+        modelError == null &&
+        colorError == null &&
+        yearError == null;
   }
 
   /// Handle plate number field change
   void onPlateNumberChanged() {
-    if (state.plateNumberError != null) {
-      emit(state.copyWith(plateNumberError: () => null));
-    }
+    _clearErrorIfPresent(
+      currentError: state.plateNumberError,
+      clearError: () => emit(state.copyWith(plateNumberError: () => null)),
+    );
   }
 
   /// Handle vehicle make field change
   void onVehicleMakeChanged() {
-    if (state.vehicleMakeError != null) {
-      emit(state.copyWith(vehicleMakeError: () => null));
-    }
+    _clearErrorIfPresent(
+      currentError: state.vehicleMakeError,
+      clearError: () => emit(state.copyWith(vehicleMakeError: () => null)),
+    );
   }
 
   /// Handle vehicle model field change
   void onVehicleModelChanged() {
-    if (state.vehicleModelError != null) {
-      emit(state.copyWith(vehicleModelError: () => null));
-    }
+    _clearErrorIfPresent(
+      currentError: state.vehicleModelError,
+      clearError: () => emit(state.copyWith(vehicleModelError: () => null)),
+    );
   }
 
   /// Handle vehicle color field change
   void onVehicleColorChanged() {
-    if (state.vehicleColorError != null) {
-      emit(state.copyWith(vehicleColorError: () => null));
-    }
+    _clearErrorIfPresent(
+      currentError: state.vehicleColorError,
+      clearError: () => emit(state.copyWith(vehicleColorError: () => null)),
+    );
   }
 
-  /// Handle vehicle year selection from dropdown
-  void onVehicleYearSelected(int? year) {
-    selectedVehicleYear = year;
-    _updateButtonStateForVehicle();
-    AppLogger.info('Resident Onboarding: Selected vehicle year - $year');
+  /// Handle vehicle year field change
+  void onVehicleYearChanged() {
+    _clearErrorIfPresent(
+      currentError: state.vehicleYearError,
+      clearError: () => emit(state.copyWith(vehicleYearError: () => null)),
+    );
   }
 
   /// Continue from add vehicle info page
   void onContinueAddVehicleInfo({required BuildContext context}) {
-    // Validate all fields
-    final plateError = OnboardingValidators.validatePlateNumber(plateNumberController.text);
-    final makeError = OnboardingValidators.validateVehicleField(vehicleMakeController.text);
-    final modelError = OnboardingValidators.validateVehicleField(vehicleModelController.text);
-    final colorError = OnboardingValidators.validateVehicleColor(vehicleColorController.text);
-    
-    // If there are any errors, show red borders
-    if (plateError != null || makeError != null || modelError != null || colorError != null || selectedVehicleYear == null) {
+    if (_isVehicleFormValid()) {
+      // All fields valid, proceed
       emit(state.copyWith(
-        plateNumberError: () => plateError,
-        vehicleMakeError: () => makeError,
-        vehicleModelError: () => modelError,
-        vehicleColorError: () => colorError,
+        plateNumberError: () => null,
+        vehicleMakeError: () => null,
+        vehicleModelError: () => null,
+        vehicleColorError: () => null,
+        vehicleYearError: () => null,
       ));
-      return;
+      // Reset button state for next page
+      emit(state.copyWith(isButtonEnabled: false));
+
+      // TODO: Navigate to next step in resident flow
+      AppLogger.info('Resident Onboarding: Next step not yet implemented');
     }
-    
     // Clear any existing errors
-    emit(state.copyWith(
-      plateNumberError: () => null,
-      vehicleMakeError: () => null,
-      vehicleModelError: () => null,
-      vehicleColorError: () => null,
-    ));
-    
-    AppLogger.info('Resident Onboarding: Vehicle info - ${plateNumberController.text}, ${vehicleMakeController.text} ${vehicleModelController.text}, Year: $selectedVehicleYear, Color: ${vehicleColorController.text}');
-    
-    // Reset button state for next page
-    emit(state.copyWith(isButtonEnabled: false));
-    
-    // TODO: Navigate to next step in resident flow
-    AppLogger.info('Resident Onboarding: Next step not yet implemented');
   }
 
   /// Clear vehicle data when navigating back
@@ -331,17 +351,25 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     vehicleMakeController.clear();
     vehicleModelController.clear();
     vehicleColorController.clear();
-    selectedVehicleYear = null;
+    vehicleYearController.clear();
     emit(state.copyWith(
       plateNumberError: () => null,
       vehicleMakeError: () => null,
       vehicleModelError: () => null,
       vehicleColorError: () => null,
+      vehicleYearError: () => null,
       isButtonEnabled: false,
     ));
     AppLogger.info('Resident Onboarding: Cleared vehicle data');
   }
 
+  void backFromVehicleInfo() {
+    if (state.showVehicleForm) {
+      emit(state.copyWith(showVehicleForm: false));
+    } else {
+      clearVehicleData();
+    }
+  }
   // ==================== Back Navigation ====================
 
   /// Clear building and unit data when navigating back
@@ -351,7 +379,7 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     emit(state.copyWith(
       unitNumberError: () => null,
       buildingNumberError: () => null,
-      isButtonEnabled: false,
+      isButtonEnabled: true,
     ));
     AppLogger.info('Resident Onboarding: Cleared building & unit data');
   }

@@ -1,8 +1,7 @@
 import 'package:park_my_whip_residents/src/features/onboarding/data/models/onboarding_data_model.dart';
-import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 /// Service for managing onboarding data operations.
-/// 
+///
 /// Handles:
 /// - Saving onboarding data to Supabase (users table)
 /// - Checking onboarding completion status

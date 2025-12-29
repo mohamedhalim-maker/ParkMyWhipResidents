@@ -139,53 +139,63 @@ class OnboardingStrings {
   static const String firstNameHint = 'Your first name';
   static const String lastName = 'Last name';
   static const String lastNameHint = 'Your last name';
-  static const String termsCheckboxText = 'By continuing, you are agreeing to our Terms & Conditions and Privacy Policy';
+  static const String termsCheckboxText =
+      'By continuing, you are agreeing to our Terms & Conditions and Privacy Policy';
   static const String continueButton = 'Continue';
   static const String alreadyHaveAccount = 'Already have an account? ';
   static const String logIn = 'Log in';
-  
+
   // User Type Page
-  static const String howWouldYouLikeToGetStarted = 'How would you like to get started?';
-  static const String userTypeSubtitle = "Tell us if you're a owner or resident in one of the next communities, or you are here as a visitor.";
+  static const String howWouldYouLikeToGetStarted =
+      'How would you like to get started?';
+  static const String userTypeSubtitle =
+      "Tell us if you're a owner or resident in one of the next communities, or you are here as a visitor.";
   static const String resident = 'Resident';
-  static const String residentDescription = "I'm an owner or resident in one of the next communities.";
+  static const String residentDescription =
+      "I'm an owner or resident in one of the next communities.";
   static const String visitor = 'Visitor';
-  static const String visitorDescription = "I'm a visitor to a resident in one of the next communities.";
+  static const String visitorDescription =
+      "I'm a visitor to a resident in one of the next communities.";
   static const String haveQuestions = 'Have questions? ';
   static const String contactUs = 'Contact us';
-  
+
   // Resident Flow - Setup Address Page (Step 1)
   static const String step1 = 'Step 1';
   static const String letsSetupYourAddress = "Let's setup your address!";
-  static const String setupAddressSubtitle = 'Select the community you belong to, with the number of your unit.';
+  static const String setupAddressSubtitle =
+      'Select the community you belong to, with the number of your unit.';
   static const String chooseYourCommunity = 'Choose your community';
   static const String next = 'Next';
-  
+
   // Community Selection Bottom Sheet
   static const String searchForYourCommunity = 'Search for your community';
   static const String noCommunityFound = 'No community found';
   static const String save = 'Save';
-  
+
   // Resident Flow - Add Building & Unit Page (Step 2)
   static const String step2 = 'Step 2';
-  static const String addYourHostBuildingAndUnitNumber = 'Add your host building and unit number!';
-  static const String addBuildingUnitSubtitle = 'Select the community where your host belongs to, with the number of your unit.';
+  static const String addYourHostBuildingAndUnitNumber =
+      'Add your host building and unit number!';
+  static const String addBuildingUnitSubtitle =
+      'Select the community where your host belongs to, with the number of your unit.';
   static const String unitNumber = 'Unit Number';
   static const String unitNumberHint = 'Unit Number';
   static const String buildingNumber = 'Building Number';
   static const String buildingNumberHint = 'Building Number';
   static const String back = 'Back';
-  
+
   // Resident Flow - Select Permit Plan Page (Step 3)
   static const String step3 = 'Step 3';
-  static const String howLongWouldYouLikeAPermitFor = 'How long would you like a permit for?';
+  static const String howLongWouldYouLikeAPermitFor =
+      'How long would you like a permit for?';
   static const String selectYourPermitFrequent = 'Select your permit frequent';
   static const String permitFrequent = 'Permit frequent';
-  
+
   // Resident Flow - Add Vehicle Info Page (Step 4)
   static const String step4 = 'Step 4';
   static const String addYourVehicleInfo = 'Add your vehicle info';
-  static const String pleaseProvideYourVehicleDetails = 'Please provide your vehicle details';
+  static const String pleaseProvideYourVehicleDetails =
+      'Please provide your vehicle details';
   static const String plateNumber = 'Plate Number';
   static const String plateNumberHint = 'Enter plate number';
   static const String vehicleMake = 'Vehicle Make';
@@ -193,7 +203,8 @@ class OnboardingStrings {
   static const String vehicleModel = 'Vehicle Model';
   static const String vehicleModelHint = 'e.g., Camry';
   static const String vehicleYear = 'Vehicle Year';
-  static const String selectYear = 'Select year';
+  static String vehicleYearHint = '${DateTime.now().year}';
   static const String vehicleColor = 'Vehicle Color';
   static const String vehicleColorHint = 'e.g., Black';
+  static const String addVehicleInfo = 'Add Vehicle Info';
 }

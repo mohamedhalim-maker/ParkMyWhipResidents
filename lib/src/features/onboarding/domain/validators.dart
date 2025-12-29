@@ -1,5 +1,5 @@
 /// Validators for onboarding form fields.
-/// 
+///
 /// Provides validation methods for:
 /// - Name fields (first name, last name)
 /// - Phone number
@@ -9,7 +9,7 @@
 class OnboardingValidators {
   /// Validate first name or last name
   /// Returns error message if invalid, null if valid
-  /// 
+  ///
   /// Rules:
   /// - Cannot be empty
   /// - Minimum 2 characters
@@ -37,7 +37,7 @@ class OnboardingValidators {
 
   /// Validate number fields (unit number, building number, etc.)
   /// Returns error message if invalid, null if valid
-  /// 
+  ///
   /// Rules:
   /// - Cannot be empty
   /// - Must contain only digits (0-9)
@@ -59,7 +59,7 @@ class OnboardingValidators {
 
   /// Validate UK plate number
   /// Returns error message if invalid, null if valid
-  /// 
+  ///
   /// Rules:
   /// - Cannot be empty
   /// - Alphanumeric characters only
@@ -87,7 +87,7 @@ class OnboardingValidators {
 
   /// Validate vehicle make or model
   /// Returns error message if invalid, null if valid
-  /// 
+  ///
   /// Rules:
   /// - Cannot be empty
   /// - Minimum 2 characters
@@ -107,7 +107,7 @@ class OnboardingValidators {
 
   /// Validate vehicle color
   /// Returns error message if invalid, null if valid
-  /// 
+  ///
   /// Rules:
   /// - Cannot be empty
   /// - Minimum 3 characters
@@ -127,6 +127,33 @@ class OnboardingValidators {
     final validCharacters = RegExp(r"^[a-zA-Z\s\-]+$");
     if (!validCharacters.hasMatch(trimmedValue)) {
       return 'Only letters allowed';
+    }
+
+    return null;
+  }
+
+  /// Validate vehicle year
+  /// Returns error message if invalid, null if valid
+  /// /// Rules:
+  /// - Cannot be empty
+  /// - Must be a number between 1980 and current year
+  static String? validateVehicleYear(String? value) {
+    if (value == null || value.isEmpty || value.trim().isEmpty) {
+      return 'Year is required';
+    }
+
+    final trimmedValue = value.trim();
+
+    // Check if numeric
+    final year = int.tryParse(trimmedValue);
+    if (year == null) {
+      return 'Year must be a number';
+    }
+
+    final currentYear = DateTime.now().year;
+
+    if (year < 1980 || year > currentYear) {
+      return 'Year must be between 1980 and $currentYear';
     }
 
     return null;

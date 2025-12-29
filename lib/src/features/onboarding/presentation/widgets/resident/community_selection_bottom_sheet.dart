@@ -58,15 +58,15 @@ class _CommunitySelectionBottomSheetState
       builder: (context, state) {
         final cubit = context.read<ResidentOnboardingCubit>();
         final filteredCommunities = state.filteredCommunities;
-        
+
         return Container(
           height: 747.h,
           padding: EdgeInsets.symmetric(horizontal: 24.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              verticalSpace(24),
-              
+              verticalSpace(12),
+
               // Header with close button
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,7 +82,7 @@ class _CommunitySelectionBottomSheetState
                     onPressed: () => Navigator.pop(context),
                     icon: Icon(
                       AppIcons.close,
-                      size: 15.w,
+                      size: 12.w,
                       color: AppColor.black,
                     ),
                     padding: EdgeInsets.zero,
@@ -90,9 +90,9 @@ class _CommunitySelectionBottomSheetState
                   ),
                 ],
               ),
-              
+
               verticalSpace(16),
-              
+
               // Search field
               SearchTextField(
                 hintText: OnboardingStrings.searchForYourCommunity,
@@ -100,9 +100,9 @@ class _CommunitySelectionBottomSheetState
                 onChanged: (query) => cubit.onCommunitySearchChanged(query),
                 searchActiveHint: OnboardingStrings.searchForYourCommunity,
               ),
-              
+
               verticalSpace(8),
-              
+
               // Communities list
               Expanded(
                 child: filteredCommunities.isEmpty
@@ -116,19 +116,21 @@ class _CommunitySelectionBottomSheetState
                         itemCount: filteredCommunities.length,
                         itemBuilder: (context, index) {
                           final community = filteredCommunities[index];
-                          final isSelected = state.tempSelectedCommunity == community;
-                          
+                          final isSelected =
+                              state.tempSelectedCommunity == community;
+
                           return CommunitySelectionItem(
                             communityName: community,
                             isSelected: isSelected,
-                            onTap: () => cubit.onTempCommunitySelected(community),
+                            onTap: () =>
+                                cubit.onTempCommunitySelected(community),
                           );
                         },
                       ),
               ),
-              
+
               verticalSpace(24),
-              
+
               // Save button
               CommonButton(
                 text: OnboardingStrings.save,
@@ -138,7 +140,7 @@ class _CommunitySelectionBottomSheetState
                 },
                 isEnabled: state.tempSelectedCommunity != null,
               ),
-              
+
               verticalSpace(24),
             ],
           ),

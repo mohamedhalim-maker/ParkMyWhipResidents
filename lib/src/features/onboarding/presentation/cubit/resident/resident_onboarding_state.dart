@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/data/models/permit_plan_model.dart';
 
 /// State for the resident onboarding flow.
-/// 
+///
 /// Holds:
 /// - Button enabled state
 /// - Selected community
@@ -24,6 +24,8 @@ class ResidentOnboardingState extends Equatable {
   final String? vehicleMakeError;
   final String? vehicleModelError;
   final String? vehicleColorError;
+  final String? vehicleYearError;
+  final bool showVehicleForm;
 
   const ResidentOnboardingState({
     this.isButtonEnabled = false,
@@ -38,6 +40,8 @@ class ResidentOnboardingState extends Equatable {
     this.vehicleMakeError,
     this.vehicleModelError,
     this.vehicleColorError,
+    this.vehicleYearError,
+    this.showVehicleForm = false,
   });
 
   /// Create a copy with updated fields
@@ -54,20 +58,41 @@ class ResidentOnboardingState extends Equatable {
     String? Function()? vehicleMakeError,
     String? Function()? vehicleModelError,
     String? Function()? vehicleColorError,
+    String? Function()? vehicleYearError,
+    bool? showVehicleForm,
   }) =>
       ResidentOnboardingState(
         isButtonEnabled: isButtonEnabled ?? this.isButtonEnabled,
         selectedCommunity: selectedCommunity ?? this.selectedCommunity,
         communitySearchQuery: communitySearchQuery ?? this.communitySearchQuery,
         filteredCommunities: filteredCommunities ?? this.filteredCommunities,
-        tempSelectedCommunity: tempSelectedCommunity != null ? tempSelectedCommunity() : this.tempSelectedCommunity,
-        unitNumberError: unitNumberError != null ? unitNumberError() : this.unitNumberError,
-        buildingNumberError: buildingNumberError != null ? buildingNumberError() : this.buildingNumberError,
-        selectedPermitPlan: selectedPermitPlan != null ? selectedPermitPlan() : this.selectedPermitPlan,
-        plateNumberError: plateNumberError != null ? plateNumberError() : this.plateNumberError,
-        vehicleMakeError: vehicleMakeError != null ? vehicleMakeError() : this.vehicleMakeError,
-        vehicleModelError: vehicleModelError != null ? vehicleModelError() : this.vehicleModelError,
-        vehicleColorError: vehicleColorError != null ? vehicleColorError() : this.vehicleColorError,
+        tempSelectedCommunity: tempSelectedCommunity != null
+            ? tempSelectedCommunity()
+            : this.tempSelectedCommunity,
+        unitNumberError:
+            unitNumberError != null ? unitNumberError() : this.unitNumberError,
+        buildingNumberError: buildingNumberError != null
+            ? buildingNumberError()
+            : this.buildingNumberError,
+        selectedPermitPlan: selectedPermitPlan != null
+            ? selectedPermitPlan()
+            : this.selectedPermitPlan,
+        plateNumberError: plateNumberError != null
+            ? plateNumberError()
+            : this.plateNumberError,
+        vehicleMakeError: vehicleMakeError != null
+            ? vehicleMakeError()
+            : this.vehicleMakeError,
+        vehicleModelError: vehicleModelError != null
+            ? vehicleModelError()
+            : this.vehicleModelError,
+        vehicleColorError: vehicleColorError != null
+            ? vehicleColorError()
+            : this.vehicleColorError,
+        vehicleYearError: vehicleYearError != null
+            ? vehicleYearError()
+            : this.vehicleYearError,
+        showVehicleForm: showVehicleForm ?? this.showVehicleForm,
       );
 
   @override
@@ -84,5 +109,7 @@ class ResidentOnboardingState extends Equatable {
         vehicleMakeError,
         vehicleModelError,
         vehicleColorError,
+        vehicleYearError,
+        showVehicleForm,
       ];
 }
