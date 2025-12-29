@@ -207,4 +207,22 @@ class OnboardingStrings {
   static const String vehicleColor = 'Vehicle Color';
   static const String vehicleColorHint = 'e.g., Black';
   static const String addVehicleInfo = 'Add Vehicle Info';
+
+  // Resident Flow - Upload Driving License Page (Step 5)
+  static const String step5 = 'Step 5';
+  static const String uploadDrivingLicense = 'Upload Driving License';
+  static const String takePhotoOrUpload = 'Take Photo or Upload';
+  static const String maxFileSize = 'Max file size (5MB)';
+}
+
+class ImagePickerStrings {
+  static const String choosePhotoSource = 'Choose Photo Source';
+  static const String gallery = 'Gallery';
+  static const String camera = 'Camera';
+  static const String permissionRequired = 'Permission Required';
+  static const String cancel = 'Cancel';
+  static const String openSettings = 'Open Settings';
+  
+  static String cameraPermissionMessage(String permissionName) =>
+      'Please enable $permissionName permission in your device settings to continue.';
 }

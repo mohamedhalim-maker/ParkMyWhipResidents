@@ -1,5 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/data/models/permit_plan_model.dart';
@@ -353,7 +357,8 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     // Reset button state for next page
     emit(state.copyWith(isButtonEnabled: false));
 
-    // TODO: Navigate to next step in resident flow
+    // Navigate to upload license page
+    Navigator.of(context).pushNamed(RoutesName.onboardingResidentStep5);
     AppLogger.info('Resident Onboarding: Vehicle info validated successfully');
   }
 
@@ -389,6 +394,153 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
       return true;
     }
   }
+
+  // ==================== License Upload ====================
+
+  final ImagePicker _imagePicker = ImagePicker();
+
+  /// Pick an image from gallery or camera
+  /// Returns the picked image file or null if cancelled/failed
+  Future<File?> pickImage(ImageSource source, BuildContext context) async {
+    try {
+      emit(state.copyWith(isLoadingImage: true));
+
+      // Determine which permission to request
+      Permission permission;
+      String permissionName;
+      
+      if (source == ImageSource.camera) {
+        permission = Permission.camera;
+        permissionName = 'Camera';
+      } else {
+        permission = Permission.photos;
+        permissionName = 'Gallery';
+      }
+
+      // Check and request permission
+      PermissionStatus status = await permission.status;
+      
+      if (status.isDenied) {
+        status = await permission.request();
+      }
+
+      if (status.isPermanentlyDenied) {
+        emit(state.copyWith(isLoadingImage: false));
+        
+        // Show dialog to guide user to settings
+        if (context.mounted) {
+          await _showPermissionDeniedDialog(context, permissionName);
+        }
+        return null;
+      }
+
+      if (status.isDenied) {
+        emit(state.copyWith(isLoadingImage: false));
+        AppLogger.info('$permissionName permission denied');
+        return null;
+      }
+
+      // Pick image
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      emit(state.copyWith(isLoadingImage: false));
+
+      if (pickedFile != null) {
+        final file = File(pickedFile.path);
+        final fileName = pickedFile.name;
+        
+        AppLogger.info('Image picked: $fileName');
+        return file;
+      }
+
+      return null;
+    } catch (e) {
+      emit(state.copyWith(isLoadingImage: false));
+      AppLogger.error('Error picking image: $e');
+      return null;
+    }
+  }
+
+  /// Show dialog when permission is permanently denied
+  Future<void> _showPermissionDeniedDialog(
+    BuildContext context,
+    String permissionName,
+  ) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$permissionName ${ImagePickerStrings.permissionRequired}'),
+        content: Text(
+          ImagePickerStrings.cameraPermissionMessage(permissionName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(ImagePickerStrings.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: Text(ImagePickerStrings.openSettings),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Set the license image and filename
+  void setLicenseImage(File image, String fileName) {
+    emit(state.copyWith(
+      licenseImage: () => image,
+      licenseFileName: () => fileName,
+      isButtonEnabled: true,
+    ));
+    AppLogger.info('Resident Onboarding: License image set - $fileName');
+  }
+
+  /// Remove the license image
+  void removeLicenseImage() {
+    emit(state.copyWith(
+      licenseImage: () => null,
+      licenseFileName: () => null,
+      isButtonEnabled: false,
+    ));
+    AppLogger.info('Resident Onboarding: License image removed');
+  }
+
+  /// Continue from upload license page
+  void onContinueUploadLicense({required BuildContext context}) {
+    if (state.licenseImage == null) {
+      return;
+    }
+
+    AppLogger.info(
+        'Resident Onboarding: License uploaded - ${state.licenseFileName}');
+
+    // Reset button state for next page
+    emit(state.copyWith(isButtonEnabled: false));
+
+    // TODO: Navigate to next step in resident flow
+    AppLogger.info('Resident Onboarding: License upload completed');
+  }
+
+  /// Clear license data when navigating back
+  void clearLicenseData() {
+    emit(state.copyWith(
+      licenseImage: () => null,
+      licenseFileName: () => null,
+      isButtonEnabled: true,
+    ));
+    AppLogger.info('Resident Onboarding: Cleared license data');
+  }
+
   // ==================== Back Navigation ====================
 
   /// Clear building and unit data when navigating back

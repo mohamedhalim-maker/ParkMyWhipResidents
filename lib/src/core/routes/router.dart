@@ -27,6 +27,7 @@ import 'package:park_my_whip_residents/src/features/onboarding/presentation/page
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/add_building_unit_page.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/select_permit_plan_page.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/add_vehicle_info_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/upload_driving_license_page.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class AppRouter {
@@ -228,6 +229,14 @@ class AppRouter {
           builder: (_) => BlocProvider.value(
             value: getIt<ResidentOnboardingCubit>(),
             child: const AddVehicleInfoPage(),
+          ),
+        );
+
+      case RoutesName.onboardingResidentStep5:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<ResidentOnboardingCubit>(),
+            child: const UploadDrivingLicensePage(),
           ),
         );
 

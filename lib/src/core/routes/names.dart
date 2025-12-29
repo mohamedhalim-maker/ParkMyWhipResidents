@@ -38,4 +38,5 @@ class RoutesName {
   static const onboardingResidentStep2 = '/onboarding-resident-step-2';
   static const onboardingResidentStep3 = '/onboarding-resident-step-3';
   static const onboardingResidentStep4 = '/onboarding-resident-step-4';
+  static const onboardingResidentStep5 = '/onboarding-resident-step-5';
 }

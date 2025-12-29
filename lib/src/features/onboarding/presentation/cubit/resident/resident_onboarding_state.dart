@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/data/models/permit_plan_model.dart';
 
@@ -11,6 +12,7 @@ import 'package:park_my_whip_residents/src/features/onboarding/data/models/permi
 /// - Validation errors for unit and building numbers
 /// - Selected permit plan
 /// - Validation errors for vehicle fields
+/// - License image and filename
 class ResidentOnboardingState extends Equatable {
   final bool isButtonEnabled;
   final String? selectedCommunity;
@@ -26,6 +28,9 @@ class ResidentOnboardingState extends Equatable {
   final String? vehicleColorError;
   final String? vehicleYearError;
   final bool showVehicleForm;
+  final File? licenseImage;
+  final String? licenseFileName;
+  final bool isLoadingImage;
 
   const ResidentOnboardingState({
     this.isButtonEnabled = false,
@@ -42,6 +47,9 @@ class ResidentOnboardingState extends Equatable {
     this.vehicleColorError,
     this.vehicleYearError,
     this.showVehicleForm = false,
+    this.licenseImage,
+    this.licenseFileName,
+    this.isLoadingImage = false,
   });
 
   /// Create a copy with updated fields
@@ -60,6 +68,9 @@ class ResidentOnboardingState extends Equatable {
     String? Function()? vehicleColorError,
     String? Function()? vehicleYearError,
     bool? showVehicleForm,
+    File? Function()? licenseImage,
+    String? Function()? licenseFileName,
+    bool? isLoadingImage,
   }) =>
       ResidentOnboardingState(
         isButtonEnabled: isButtonEnabled ?? this.isButtonEnabled,
@@ -93,6 +104,10 @@ class ResidentOnboardingState extends Equatable {
             ? vehicleYearError()
             : this.vehicleYearError,
         showVehicleForm: showVehicleForm ?? this.showVehicleForm,
+        licenseImage: licenseImage != null ? licenseImage() : this.licenseImage,
+        licenseFileName:
+            licenseFileName != null ? licenseFileName() : this.licenseFileName,
+        isLoadingImage: isLoadingImage ?? this.isLoadingImage,
       );
 
   @override
@@ -111,5 +126,8 @@ class ResidentOnboardingState extends Equatable {
         vehicleColorError,
         vehicleYearError,
         showVehicleForm,
+        licenseImage,
+        licenseFileName,
+        isLoadingImage,
       ];
 }
