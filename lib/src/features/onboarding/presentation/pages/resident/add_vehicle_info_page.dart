@@ -19,10 +19,14 @@ class AddVehicleInfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          context.read<ResidentOnboardingCubit>().backFromVehicleInfo();
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          final cubit = context.read<ResidentOnboardingCubit>();
+          final shouldNavigate = cubit.backFromVehicleInfo();
+          if (shouldNavigate) {
+            Navigator.of(context).pop();
+          }
         }
       },
       child: Scaffold(
@@ -93,8 +97,10 @@ class AddVehicleInfoPage extends StatelessWidget {
                       CommonTextButton(
                         text: OnboardingStrings.back,
                         onPressed: () {
-                          cubit.backFromVehicleInfo();
-                          Navigator.of(context).pop();
+                          final shouldNavigate = cubit.backFromVehicleInfo();
+                          if (shouldNavigate) {
+                            Navigator.of(context).pop();
+                          }
                         },
                         width: 110.w,
                       ),

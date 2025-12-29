@@ -61,7 +61,7 @@ class _CommunitySelectionBottomSheetState
 
         return Container(
           height: 747.h,
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -71,12 +71,11 @@ class _CommunitySelectionBottomSheetState
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(
-                    width: 15.w,
-                  ),
+                  SizedBox(width: 12.w), // Placeholder for alignment
                   Text(
                     OnboardingStrings.chooseYourCommunity,
                     style: AppTextStyles.urbanistFont18Grey800SemiBold1_25,
+                    textAlign: TextAlign.center,
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -86,7 +85,7 @@ class _CommunitySelectionBottomSheetState
                       color: AppColor.black,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints: BoxConstraints(),
                   ),
                 ],
               ),

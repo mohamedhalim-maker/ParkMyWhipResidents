@@ -150,19 +150,16 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
 
   /// Update button enabled state based on building and unit number
   void _updateButtonStateForBuildingUnit() {
-    final isValid = _isBuildingUnitValid();
-    if (state.isButtonEnabled != isValid) {
-      emit(state.copyWith(isButtonEnabled: isValid));
+    final hasData = _hasBuildingUnitData();
+    if (state.isButtonEnabled != hasData) {
+      emit(state.copyWith(isButtonEnabled: hasData));
     }
   }
 
-  /// Check if building and unit number fields are valid (no validation errors)
-  bool _isBuildingUnitValid() {
-    final unitError =
-        OnboardingValidators.validateNumber(unitNumberController.text);
-    final buildingError =
-        OnboardingValidators.validateNumber(buildingNumberController.text);
-    return unitError == null && buildingError == null;
+  /// Check if building and unit number fields have data (not empty)
+  bool _hasBuildingUnitData() {
+    return unitNumberController.text.trim().isNotEmpty &&
+        buildingNumberController.text.trim().isNotEmpty;
   }
 
   /// Handle unit number field change
@@ -255,7 +252,7 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
 
   /// Update button enabled state based on vehicle form fields
   void _updateButtonStateForVehicle() {
-    final isValid = _isVehicleFormValid();
+    final isValid = _hasVehicleFormData();
     if (state.isButtonEnabled != isValid) {
       emit(state.copyWith(isButtonEnabled: isValid));
     }
@@ -265,24 +262,13 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     emit(state.copyWith(showVehicleForm: true));
   }
 
-  /// Check if all vehicle form fields are valid
-  bool _isVehicleFormValid() {
-    final plateError =
-        OnboardingValidators.validatePlateNumber(plateNumberController.text);
-    final makeError =
-        OnboardingValidators.validateVehicleField(vehicleMakeController.text);
-    final modelError =
-        OnboardingValidators.validateVehicleField(vehicleModelController.text);
-    final colorError =
-        OnboardingValidators.validateVehicleColor(vehicleColorController.text);
-    final yearError =
-        OnboardingValidators.validateVehicleYear(vehicleYearController.text);
-
-    return plateError == null &&
-        makeError == null &&
-        modelError == null &&
-        colorError == null &&
-        yearError == null;
+  /// Check if all vehicle form fields have data (not empty)
+  bool _hasVehicleFormData() {
+    return plateNumberController.text.trim().isNotEmpty &&
+        vehicleMakeController.text.trim().isNotEmpty &&
+        vehicleModelController.text.trim().isNotEmpty &&
+        vehicleColorController.text.trim().isNotEmpty &&
+        vehicleYearController.text.trim().isNotEmpty;
   }
 
   /// Handle plate number field change
@@ -327,22 +313,48 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
 
   /// Continue from add vehicle info page
   void onContinueAddVehicleInfo({required BuildContext context}) {
-    if (_isVehicleFormValid()) {
-      // All fields valid, proceed
-      emit(state.copyWith(
-        plateNumberError: () => null,
-        vehicleMakeError: () => null,
-        vehicleModelError: () => null,
-        vehicleColorError: () => null,
-        vehicleYearError: () => null,
-      ));
-      // Reset button state for next page
-      emit(state.copyWith(isButtonEnabled: false));
+    // Validate all fields
+    final plateError =
+        OnboardingValidators.validatePlateNumber(plateNumberController.text);
+    final makeError =
+        OnboardingValidators.validateVehicleField(vehicleMakeController.text);
+    final modelError =
+        OnboardingValidators.validateVehicleField(vehicleModelController.text);
+    final colorError =
+        OnboardingValidators.validateVehicleColor(vehicleColorController.text);
+    final yearError =
+        OnboardingValidators.validateVehicleYear(vehicleYearController.text);
 
-      // TODO: Navigate to next step in resident flow
-      AppLogger.info('Resident Onboarding: Next step not yet implemented');
+    // If there are any errors, show them
+    if (plateError != null ||
+        makeError != null ||
+        modelError != null ||
+        colorError != null ||
+        yearError != null) {
+      emit(state.copyWith(
+        plateNumberError: () => plateError,
+        vehicleMakeError: () => makeError,
+        vehicleModelError: () => modelError,
+        vehicleColorError: () => colorError,
+        vehicleYearError: () => yearError,
+      ));
+      return;
     }
-    // Clear any existing errors
+
+    // All fields valid, clear errors and proceed
+    emit(state.copyWith(
+      plateNumberError: () => null,
+      vehicleMakeError: () => null,
+      vehicleModelError: () => null,
+      vehicleColorError: () => null,
+      vehicleYearError: () => null,
+    ));
+
+    // Reset button state for next page
+    emit(state.copyWith(isButtonEnabled: false));
+
+    // TODO: Navigate to next step in resident flow
+    AppLogger.info('Resident Onboarding: Vehicle info validated successfully');
   }
 
   /// Clear vehicle data when navigating back
@@ -363,11 +375,18 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     AppLogger.info('Resident Onboarding: Cleared vehicle data');
   }
 
-  void backFromVehicleInfo() {
+  /// Handle back navigation from vehicle info page
+  /// Returns true if should navigate to previous page, false if just hiding form
+  bool backFromVehicleInfo() {
     if (state.showVehicleForm) {
-      emit(state.copyWith(showVehicleForm: false));
-    } else {
+      // Hide the form and clear vehicle controllers, don't navigate
       clearVehicleData();
+      emit(state.copyWith(showVehicleForm: false));
+      return false;
+    } else {
+      // Navigate back and enable button for step 3
+      emit(state.copyWith(isButtonEnabled: true));
+      return true;
     }
   }
   // ==================== Back Navigation ====================

@@ -21,6 +21,7 @@ class CustomTextField extends StatefulWidget {
     this.showError = true,
     BorderRadius? borderRadius,
     this.showTitle = true,
+    this.fillColor,
   }) : borderRadius = borderRadius ?? BorderRadius.circular(10);
 
   final String title;
@@ -46,6 +47,9 @@ class CustomTextField extends StatefulWidget {
 
   /// Whether to show title label above field (default: true)
   final bool showTitle;
+
+  /// control fill color
+  final Color? fillColor;
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -120,6 +124,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             }
           },
           decoration: InputDecoration(
+            fillColor: widget.fillColor,
             hintText: widget.hintText,
             hintStyle: AppTextStyles.urbanistFont16Grey800Opacity40Regular1_3,
             contentPadding: EdgeInsets.all(12.w),
@@ -130,14 +135,14 @@ class _CustomTextFieldState extends State<CustomTextField> {
             enabledBorder: OutlineInputBorder(
               borderRadius: widget.borderRadius,
               borderSide: BorderSide(
-                color: hasError && widget.showError ? AppColor.red500 : AppColor.grey300,
+                color: hasError ? AppColor.red500 : AppColor.grey300,
                 width: 1.w,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: widget.borderRadius,
               borderSide: BorderSide(
-                color: hasError && widget.showError ? AppColor.red500 : AppColor.grey800,
+                color: hasError ? AppColor.red500 : AppColor.grey800,
                 width: 1.w,
               ),
             ),
@@ -169,7 +174,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         ),
 
         // Character Counter (shown when focused and maxLength is set)
-        if (_isFocused && widget.maxLength != null&&widget.showError) ...[
+        if (_isFocused && widget.maxLength != null) ...[
           verticalSpace(4),
           Align(
             alignment: Alignment.centerRight,
