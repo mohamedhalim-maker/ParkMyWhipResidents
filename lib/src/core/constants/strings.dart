@@ -213,6 +213,10 @@ class OnboardingStrings {
   static const String uploadDrivingLicense = 'Upload Driving License';
   static const String takePhotoOrUpload = 'Take Photo or Upload';
   static const String maxFileSize = 'Max file size (5MB)';
+  
+  // Resident Flow - Upload Vehicle Registration Page (Step 6)
+  static const String step6 = 'Step 6';
+  static const String uploadVehicleRegistration = 'Upload Vehicle Registration';
 }
 
 class ImagePickerStrings {

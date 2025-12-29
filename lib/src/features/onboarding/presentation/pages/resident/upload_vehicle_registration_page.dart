@@ -13,15 +13,15 @@ import 'package:park_my_whip_residents/src/features/onboarding/presentation/widg
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/step_progress_indicator.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/image_upload_widget.dart';
 
-class UploadDrivingLicensePage extends StatelessWidget {
-  const UploadDrivingLicensePage({super.key});
+class UploadVehicleRegistrationPage extends StatelessWidget {
+  const UploadVehicleRegistrationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          context.read<ResidentOnboardingCubit>().clearLicenseData();
+          context.read<ResidentOnboardingCubit>().clearRegistrationData();
         }
       },
       child: Scaffold(
@@ -38,19 +38,19 @@ class UploadDrivingLicensePage extends StatelessWidget {
 
                   // Page title
                   Text(
-                    OnboardingStrings.uploadDrivingLicense,
+                    OnboardingStrings.uploadVehicleRegistration,
                     style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
                   ),
 
                   verticalSpace(24),
 
-                  // License upload widget
+                  // Registration upload widget
                   ImageUploadWidget(
-                    image: state.licenseImage,
-                    fileName: state.licenseFileName,
+                    image: state.registrationImage,
+                    fileName: state.registrationFileName,
                     isLoading: state.isLoadingImage,
-                    onTap: () => cubit.handleLicenseUpload(context),
-                    onRemove: () => cubit.removeLicenseImage(),
+                    onTap: () => cubit.handleRegistrationUpload(context),
+                    onRemove: () => cubit.removeRegistrationImage(),
                   ),
 
                   verticalSpace(8),
@@ -69,8 +69,8 @@ class UploadDrivingLicensePage extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Step progress indicator (5/8 steps)
-                  const StepProgressIndicator(currentStep: 5, totalSteps: 8),
+                  // Step progress indicator (6/8 steps)
+                  const StepProgressIndicator(currentStep: 6, totalSteps: 8),
 
                   verticalSpace(16),
 
@@ -86,7 +86,7 @@ class UploadDrivingLicensePage extends StatelessWidget {
                       CommonButton(
                         text: OnboardingStrings.next,
                         onPressed: () =>
-                            cubit.onContinueUploadLicense(context: context),
+                            cubit.onContinueUploadRegistration(context: context),
                         isEnabled: state.isButtonEnabled,
                         width: 110.w,
                       ),

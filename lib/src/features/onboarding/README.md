@@ -2,14 +2,14 @@
 
 ## 📋 Overview
 
-The onboarding feature collects essential user information after successful authentication. This is a **multi-step flow** that guides users through providing personal details and determining their user type (Resident or Visitor). The resident flow includes **4 completed steps**: user info, user type, community selection, building/unit, permit plan, and vehicle information.
+The onboarding feature collects essential user information after successful authentication. This is a **multi-step flow** that guides users through providing personal details and determining their user type (Resident or Visitor). The resident flow includes **6 completed steps**: user info, user type, community selection, building/unit, permit plan, vehicle information, driving license upload, and vehicle registration upload.
 
 ## 🏗️ Architecture
 
 This feature follows **Clean Architecture** with clear separation of concerns:
 - **Data Layer**: Models (`OnboardingData`, `PermitPlanModel`) and services
 - **Domain Layer**: 6 validation functions (pure logic, no Flutter dependencies)
-- **Presentation Layer**: 2 singleton cubits, 6 pages, 13 reusable widgets
+- **Presentation Layer**: 2 singleton cubits, 8 pages, 14 reusable widgets
 
 ### Directory Structure
 
@@ -30,33 +30,36 @@ lib/src/features/onboarding/
     │   ├── general/                          # ✅ General flow (Steps 1-2)
     │   │   ├── general_onboarding_cubit.dart # User name + user type logic
     │   │   └── general_onboarding_state.dart # 4 fields
-    │   └── resident/                         # ✅ Resident flow (Steps 1-4)
-    │       ├── resident_onboarding_cubit.dart # Community + building + permit + vehicle
-    │       └── resident_onboarding_state.dart # 14 fields
+    │   └── resident/                         # ✅ Resident flow (Steps 1-6)
+    │       ├── resident_onboarding_cubit.dart # All resident steps
+    │       └── resident_onboarding_state.dart # 18 fields
     │
-    ├── pages/                                # ✅ 6 pages
+    ├── pages/                                # ✅ 8 pages
     │   ├── user_name_page.dart               # Step 1: First/Last name
     │   ├── user_type_page.dart               # Step 2: Resident/Visitor
     │   └── resident/
     │       ├── setup_address_page.dart       # Resident Step 1: Community
     │       ├── add_building_unit_page.dart   # Resident Step 2: Unit + Building
     │       ├── select_permit_plan_page.dart  # Resident Step 3: Weekly/Monthly/Yearly
-    │       └── add_vehicle_info_page.dart    # Resident Step 4: Vehicle (5 fields)
+    │       ├── add_vehicle_info_page.dart    # Resident Step 4: Vehicle (5 fields)
+    │       ├── upload_driving_license_page.dart      # Resident Step 5: License image
+    │       └── upload_vehicle_registration_page.dart # Resident Step 6: Registration image
     │
-    └── widgets/                              # ✅ 13 widgets
+    └── widgets/                              # ✅ 14 widgets
         ├── selection_card.dart
         ├── terms_checkbox.dart
         ├── general/                          # 3 widgets
         │   ├── contact_us_text.dart
         │   ├── selection_indicator.dart
         │   └── step_progress_indicator.dart
-        └── resident/                         # 7 widgets
+        └── resident/                         # 8 widgets
             ├── choose_community_field.dart
             ├── community_selection_item.dart
             ├── community_selection_bottom_sheet.dart
             ├── permit_plan_card.dart
             ├── vehicle_info_header.dart
-            └── vehicle_info_form.dart
+            ├── vehicle_info_form.dart
+            └── image_upload_widget.dart
 ```
 
 ---
@@ -84,10 +87,10 @@ lib/src/features/onboarding/
 - `onUserTypeChanged(String)` - Select resident/visitor
 - `onContinueUserType()` - Pass data to resident/visitor flow
 
-### ResidentOnboardingCubit (Steps 1-4+)
+### ResidentOnboardingCubit (Steps 1-6+)
 
 **Controllers**: 7 total (unitNumber, buildingNumber, plateNumber, vehicleMake, vehicleModel, vehicleColor, vehicleYear)  
-**State**: 14 fields (button, community search, unit/building errors, permit plan, vehicle errors, form visibility)
+**State**: 18 fields (button, community search, unit/building errors, permit plan, vehicle errors, form visibility, license image/filename, registration image/filename)
 
 **Key Methods by Step**:
 
@@ -121,11 +124,26 @@ lib/src/features/onboarding/
 - `backFromVehicleInfo()` - Smart back (hide form OR navigate)
 - `clearVehicleData()` - Clear all vehicle fields
 
+**Step 5 - License Upload**:
+- `pickImageFromCamera()` - Pick from camera
+- `pickImageFromGallery()` - Pick from gallery
+- `pickImage()` - Generic picker with validation
+- `setLicenseImage()` - Set image and filename
+- `removeLicenseImage()` - Remove license
+- `onContinueUploadLicense()` - Navigate to Step 6
+- `clearLicenseData()` - Back navigation cleanup
+
+**Step 6 - Registration Upload**:
+- `setRegistrationImage()` - Set image and filename
+- `removeRegistrationImage()` - Remove registration
+- `onContinueUploadRegistration()` - Navigate to next step
+- `clearRegistrationData()` - Back navigation cleanup
+
 ---
 
 ## ✅ Completed Features
 
-### Pages (7/7) ✅
+### Pages (8/8) ✅
 
 | Step | Page | Features | State Management |
 |------|------|----------|------------------|
@@ -135,7 +153,8 @@ lib/src/features/onboarding/
 | **R2** | AddBuildingUnitPage | Unit + Building (connected fields) | ResidentOnboardingCubit |
 | **R3** | SelectPermitPlanPage | Weekly/Monthly/Yearly plans | ResidentOnboardingCubit |
 | **R4** | AddVehicleInfoPage | Plate/Make/Model/Color/Year | ResidentOnboardingCubit |
-| **R5** | UploadDrivingLicensePage | License image upload (placeholder) | ResidentOnboardingCubit |
+| **R5** | UploadDrivingLicensePage | License image upload | ResidentOnboardingCubit |
+| **R6** | UploadVehicleRegistrationPage | Vehicle registration image upload | ResidentOnboardingCubit |
 
 ### Validators (6/6) ✅
 
@@ -169,6 +188,48 @@ lib/src/features/onboarding/
 
 **Core (1)**:
 14. CommonTextButton (Back actions)
+
+---
+
+## 🎯 Recent Updates
+
+### Step 6 Complete ✅
+
+**UploadVehicleRegistrationPage** - Vehicle registration image upload with camera/gallery picker
+
+**Features**:
+- Empty state: imageIcon (red container) + "Take Photo or Upload" + forward arrow
+- Uploaded state: Image preview + document icon (red container) + filename + close icon
+- Image source selection: Camera or Gallery via bottom sheet
+- Image quality optimization (85%, max 1920x1920)
+- File size validation (5MB limit with error dialog)
+- Remove uploaded image
+- Max file size text (5MB)
+- Loading state during image picking
+- Error handling with dialogs
+
+**Reused Widget**:
+- ImageUploadWidget (same widget as license upload)
+
+**State Updates**:
+- registrationImage (File?)
+- registrationFileName (String?)
+
+**Cubit Methods**:
+- setRegistrationImage() - Set image and filename
+- removeRegistrationImage() - Clear registration data
+- onContinueUploadRegistration() - Navigate to next step
+- clearRegistrationData() - Back navigation cleanup
+
+**Integration**:
+- Uses same `pickImageFromCamera()` and `pickImageFromGallery()` methods
+- Leverages existing `ImageSourceBottomSheet` widget
+- Reuses `ImageUploadWidget` for consistent UI/UX
+- Same error handling patterns as license upload
+
+**Navigation Flow**:
+- From: Upload Driving License (Step 5)
+- To: Next step (TBD)
 
 ---
 
@@ -362,7 +423,8 @@ CustomTextField(
 - [x] Step 3: Permit Plan ✅
 - [x] Step 4: Vehicle Info ✅
 - [x] Step 5: Upload License ✅
-- [ ] Steps 6-8: TBD
+- [x] Step 6: Upload Vehicle Registration ✅
+- [ ] Steps 7-8: TBD
 - [ ] Final submission
 
 ### Phase 2: Visitor Flow
@@ -390,50 +452,63 @@ CustomTextField(
 
 ## 📊 Statistics
 
-**Components**: 35 total
-- Pages: 7 (2 general + 5 resident)
+**Components**: 36 total
+- Pages: 8 (2 general + 6 resident)
 - Cubits: 2 (singleton)
-- States: 2 (20 total fields: 4 general + 16 resident)
+- States: 2 (22 total fields: 4 general + 18 resident)
 - Validators: 6
 - Widgets: 14 (5 general + 8 resident + 1 core)
-- Routes: 7
+- Routes: 8
 - Controllers: 7
 
-**Lines of Code**: ~3000+
-- Pages: ~800
-- Cubits: ~600
+**Lines of Code**: ~3200+
+- Pages: ~950
+- Cubits: ~650
 - Widgets: ~1000
 - Validators: ~160
 - Models: ~100
 
 ---
 
-## 🎯 Recent Updates
+## 🗂️ Previous Updates
 
 ### Step 5 Complete ✅
 
-**UploadDrivingLicensePage** - License image upload with two-state UI
+**UploadDrivingLicensePage** - License image upload with camera/gallery picker
 
 **Features**:
 - Empty state: imageIcon (red container) + "Take Photo or Upload" + forward arrow
 - Uploaded state: Image preview + document icon (red container) + filename + close icon
-- Tap to upload (placeholder - logic will be added later)
+- Image source selection: Camera or Gallery via bottom sheet
+- Image quality optimization (85%, max 1920x1920)
+- File size validation (5MB limit with error dialog)
 - Remove uploaded image
-- Max file size text (50MB)
+- Max file size text (5MB)
+- Loading state during image picking
+- Error handling with dialogs
 
 **New Widget**:
-- LicenseUploadWidget (reusable, 2 states)
+- ImageUploadWidget (reusable, 2 states with loading support)
 
 **State Updates**:
 - licenseImage (File?)
 - licenseFileName (String?)
+- isLoadingImage (bool)
 
 **Cubit Methods**:
-- onLicenseUploadTapped() - Placeholder for permission/gallery
+- pickImageFromCamera() - Pick from camera with ImagePicker
+- pickImageFromGallery() - Pick from gallery with ImagePicker
+- pickImage() - Generic picker with size validation & error handling
 - setLicenseImage() - Set image and filename
 - removeLicenseImage() - Clear license data
 - onContinueUploadLicense() - Navigate to next step
 - clearLicenseData() - Back navigation cleanup
+
+**Integration**:
+- Uses `image_picker` package for cross-platform image selection
+- Leverages `ImageSourceBottomSheet` widget for source selection
+- Automatic permission handling via image_picker plugin
+- Error dialogs using `showErrorDialog` from core widgets
 
 ---
 
@@ -491,7 +566,9 @@ AddVehicleInfoPage (R4) → Plate/Make/Model/Color/Year
     ↓
 UploadDrivingLicensePage (R5) → License image upload
     ↓
-[Steps 6-8 TBD]
+UploadVehicleRegistrationPage (R6) → Vehicle registration image upload
+    ↓
+[Steps 7-8 TBD]
     ↓
 Submit → Dashboard
 ```
@@ -515,6 +592,8 @@ ResidentOnboardingCubit:
   ↓
   Step 5: licenseImage, licenseFileName
   ↓
+  Step 6: registrationImage, registrationFileName
+  ↓
   submitResidentOnboarding() (TODO)
 ```
 
@@ -522,4 +601,4 @@ ResidentOnboardingCubit:
 
 **Created**: January 2024  
 **Last Updated**: January 2024  
-**Status**: Resident flow Step 5 complete ✅ (5/8 steps done)
+**Status**: Resident flow Step 6 complete ✅ (6/8 steps done)

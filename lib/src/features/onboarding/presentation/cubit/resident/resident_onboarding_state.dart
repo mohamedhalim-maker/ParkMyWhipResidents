@@ -13,6 +13,7 @@ import 'package:park_my_whip_residents/src/features/onboarding/data/models/permi
 /// - Selected permit plan
 /// - Validation errors for vehicle fields
 /// - License image and filename
+/// - Vehicle registration image and filename
 class ResidentOnboardingState extends Equatable {
   final bool isButtonEnabled;
   final String? selectedCommunity;
@@ -31,6 +32,8 @@ class ResidentOnboardingState extends Equatable {
   final File? licenseImage;
   final String? licenseFileName;
   final bool isLoadingImage;
+  final File? registrationImage;
+  final String? registrationFileName;
 
   const ResidentOnboardingState({
     this.isButtonEnabled = false,
@@ -50,6 +53,8 @@ class ResidentOnboardingState extends Equatable {
     this.licenseImage,
     this.licenseFileName,
     this.isLoadingImage = false,
+    this.registrationImage,
+    this.registrationFileName,
   });
 
   /// Create a copy with updated fields
@@ -71,6 +76,8 @@ class ResidentOnboardingState extends Equatable {
     File? Function()? licenseImage,
     String? Function()? licenseFileName,
     bool? isLoadingImage,
+    File? Function()? registrationImage,
+    String? Function()? registrationFileName,
   }) =>
       ResidentOnboardingState(
         isButtonEnabled: isButtonEnabled ?? this.isButtonEnabled,
@@ -108,6 +115,12 @@ class ResidentOnboardingState extends Equatable {
         licenseFileName:
             licenseFileName != null ? licenseFileName() : this.licenseFileName,
         isLoadingImage: isLoadingImage ?? this.isLoadingImage,
+        registrationImage: registrationImage != null
+            ? registrationImage()
+            : this.registrationImage,
+        registrationFileName: registrationFileName != null
+            ? registrationFileName()
+            : this.registrationFileName,
       );
 
   @override
@@ -129,5 +142,7 @@ class ResidentOnboardingState extends Equatable {
         licenseImage,
         licenseFileName,
         isLoadingImage,
+        registrationImage,
+        registrationFileName,
       ];
 }

@@ -6,6 +6,7 @@ import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/helpers/app_logger.dart';
 import 'package:park_my_whip_residents/src/core/routes/names.dart';
 import 'package:park_my_whip_residents/src/core/widgets/error_dialog.dart';
+import 'package:park_my_whip_residents/src/core/widgets/image_source_bottom_sheet.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/data/models/permit_plan_model.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/domain/validators.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
@@ -467,6 +468,27 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     }
   }
 
+  /// Handle license upload by showing image source bottom sheet
+  void handleLicenseUpload(BuildContext context) {
+    showImageSourceBottomSheet(
+      context: context,
+      onCameraTap: () async {
+        final file = await pickImageFromCamera(context);
+        if (file != null) {
+          final fileName = file.path.split('/').last;
+          setLicenseImage(file, fileName);
+        }
+      },
+      onGalleryTap: () async {
+        final file = await pickImageFromGallery(context);
+        if (file != null) {
+          final fileName = file.path.split('/').last;
+          setLicenseImage(file, fileName);
+        }
+      },
+    );
+  }
+
   /// Set the license image and filename
   void setLicenseImage(File image, String fileName) {
     emit(state.copyWith(
@@ -499,8 +521,8 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
     // Reset button state for next page
     emit(state.copyWith(isButtonEnabled: false));
 
-    // TODO: Navigate to next step in resident flow
-    AppLogger.info('Resident Onboarding: License upload completed');
+    // Navigate to upload vehicle registration page
+    Navigator.of(context).pushNamed(RoutesName.onboardingResidentStep6);
   }
 
   /// Clear license data when navigating back
@@ -511,6 +533,76 @@ class ResidentOnboardingCubit extends Cubit<ResidentOnboardingState> {
       isButtonEnabled: true,
     ));
     AppLogger.info('Resident Onboarding: Cleared license data');
+  }
+
+  // ==================== Vehicle Registration Upload ====================
+
+  /// Handle registration upload by showing image source bottom sheet
+  void handleRegistrationUpload(BuildContext context) {
+    showImageSourceBottomSheet(
+      context: context,
+      onCameraTap: () async {
+        final file = await pickImageFromCamera(context);
+        if (file != null) {
+          final fileName = file.path.split('/').last;
+          setRegistrationImage(file, fileName);
+        }
+      },
+      onGalleryTap: () async {
+        final file = await pickImageFromGallery(context);
+        if (file != null) {
+          final fileName = file.path.split('/').last;
+          setRegistrationImage(file, fileName);
+        }
+      },
+    );
+  }
+
+  /// Set the vehicle registration image and filename
+  void setRegistrationImage(File image, String fileName) {
+    emit(state.copyWith(
+      registrationImage: () => image,
+      registrationFileName: () => fileName,
+      isButtonEnabled: true,
+    ));
+    AppLogger.info(
+        'Resident Onboarding: Vehicle registration image set - $fileName');
+  }
+
+  /// Remove the vehicle registration image
+  void removeRegistrationImage() {
+    emit(state.copyWith(
+      registrationImage: () => null,
+      registrationFileName: () => null,
+      isButtonEnabled: false,
+    ));
+    AppLogger.info('Resident Onboarding: Vehicle registration image removed');
+  }
+
+  /// Continue from upload vehicle registration page
+  void onContinueUploadRegistration({required BuildContext context}) {
+    if (state.registrationImage == null) {
+      return;
+    }
+
+    AppLogger.info(
+        'Resident Onboarding: Vehicle registration uploaded - ${state.registrationFileName}');
+
+    // Reset button state for next page
+    emit(state.copyWith(isButtonEnabled: false));
+
+    // TODO: Navigate to next step in resident flow
+    AppLogger.info('Resident Onboarding: Vehicle registration upload completed');
+  }
+
+  /// Clear vehicle registration data when navigating back
+  void clearRegistrationData() {
+    emit(state.copyWith(
+      registrationImage: () => null,
+      registrationFileName: () => null,
+      isButtonEnabled: true,
+    ));
+    AppLogger.info('Resident Onboarding: Cleared vehicle registration data');
   }
 
   // ==================== Back Navigation ====================
