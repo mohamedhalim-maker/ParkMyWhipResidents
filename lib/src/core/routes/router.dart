@@ -20,16 +20,17 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forg
 import 'package:park_my_whip_residents/src/features/auth/presentation/pages/forgot_password_pages/password_reset_success_page.dart';
 import 'package:park_my_whip_residents/src/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/general/general_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/user_name_page.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/user_type_page.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/setup_address_page.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/add_building_unit_page.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/select_permit_plan_page.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/add_vehicle_info_page.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/upload_driving_license_page.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/upload_vehicle_registration_page.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/resident/upload_insurance_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/setup_address_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/add_building_unit_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/select_permit_plan_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/add_vehicle_info_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/upload_driving_license_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/upload_vehicle_registration_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/upload_insurance_page.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/pages/claim_permit/confirm_details_page.dart';
 import 'package:park_my_whip_residents/supabase/supabase_config.dart';
 
 class AppRouter {
@@ -187,16 +188,16 @@ class AppRouter {
           ),
         );
 
-      case RoutesName.onboardingResidentStep1:
+      case RoutesName.claimPermitSetupAddress:
         // Extract user data from arguments
         final args = settings.arguments as Map<String, dynamic>?;
         final firstName = args?['firstName'] as String? ?? '';
         final lastName = args?['lastName'] as String? ?? '';
 
-        // Initialize resident cubit with user data
-        final residentCubit = getIt<ResidentOnboardingCubit>();
+        // Initialize claim permit cubit with user data
+        final claimPermitCubit = getIt<ClaimPermitCubit>();
         if (firstName.isNotEmpty && lastName.isNotEmpty) {
-          residentCubit.initializeWithUserData(
+          claimPermitCubit.initializeWithUserData(
             firstName: firstName,
             lastName: lastName,
           );
@@ -204,56 +205,64 @@ class AppRouter {
 
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: residentCubit,
+            value: claimPermitCubit,
             child: const SetupAddressPage(),
           ),
         );
 
-      case RoutesName.onboardingResidentStep2:
+      case RoutesName.claimPermitAddBuildingUnit:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<ResidentOnboardingCubit>(),
+            value: getIt<ClaimPermitCubit>(),
             child: const AddBuildingUnitPage(),
           ),
         );
 
-      case RoutesName.onboardingResidentStep3:
+      case RoutesName.claimPermitSelectPermitPlan:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<ResidentOnboardingCubit>(),
+            value: getIt<ClaimPermitCubit>(),
             child: const SelectPermitPlanPage(),
           ),
         );
 
-      case RoutesName.onboardingResidentStep4:
+      case RoutesName.claimPermitAddVehicleInfo:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<ResidentOnboardingCubit>(),
+            value: getIt<ClaimPermitCubit>(),
             child: const AddVehicleInfoPage(),
           ),
         );
 
-      case RoutesName.onboardingResidentStep5:
+      case RoutesName.claimPermitUploadLicense:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<ResidentOnboardingCubit>(),
+            value: getIt<ClaimPermitCubit>(),
             child: const UploadDrivingLicensePage(),
           ),
         );
 
-      case RoutesName.onboardingResidentStep6:
+      case RoutesName.claimPermitUploadRegistration:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<ResidentOnboardingCubit>(),
+            value: getIt<ClaimPermitCubit>(),
             child: const UploadVehicleRegistrationPage(),
           ),
         );
 
-      case RoutesName.onboardingResidentStep7:
+      case RoutesName.claimPermitUploadInsurance:
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
-            value: getIt<ResidentOnboardingCubit>(),
+            value: getIt<ClaimPermitCubit>(),
             child: const UploadInsurancePage(),
+          ),
+        );
+
+      case RoutesName.claimPermitConfirmDetails:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: getIt<ClaimPermitCubit>(),
+            child: const ConfirmDetailsPage(),
           ),
         );
 

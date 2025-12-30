@@ -7,7 +7,7 @@ import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/logi
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/signup/signup_cubit.dart';
 import 'package:park_my_whip_residents/src/features/auth/presentation/cubit/forgot_password/forgot_password_cubit.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/general/general_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -62,7 +62,7 @@ Future<void> setupDependencyInjection() async {
     () => GeneralOnboardingCubit(),
   );
 
-  getIt.registerLazySingleton<ResidentOnboardingCubit>(
-    () => ResidentOnboardingCubit(),
+  getIt.registerLazySingleton<ClaimPermitCubit>(
+    () => ClaimPermitCubit(),
   );
 }

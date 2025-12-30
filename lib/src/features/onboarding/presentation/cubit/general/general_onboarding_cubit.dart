@@ -6,7 +6,7 @@ import 'package:park_my_whip_residents/src/features/onboarding/domain/validators
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/general/general_onboarding_state.dart';
 
 /// Cubit managing the general onboarding flow (Steps 1-2).
-/// 
+///
 /// Responsibilities:
 /// - Manage user name input (first name, last name)
 /// - Manage terms acceptance checkbox
@@ -14,7 +14,7 @@ import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubi
 /// - Manage user type selection (Resident/Visitor)
 /// - Navigate between general onboarding steps
 /// - Navigate to appropriate flow based on user type
-/// 
+///
 /// This is a SINGLETON cubit (registered with registerLazySingleton)
 /// so the same instance is shared across general onboarding pages.
 class GeneralOnboardingCubit extends Cubit<GeneralOnboardingState> {
@@ -69,8 +69,10 @@ class GeneralOnboardingCubit extends Cubit<GeneralOnboardingState> {
 
   /// Validate personal info step (called on Continue button press)
   void onContinuePersonalInfo({required BuildContext context}) {
-    final firstNameError = OnboardingValidators.validateName(firstNameController.text);
-    final lastNameError = OnboardingValidators.validateName(lastNameController.text);
+    final firstNameError =
+        OnboardingValidators.validateName(firstNameController.text);
+    final lastNameError =
+        OnboardingValidators.validateName(lastNameController.text);
 
     // If both are valid, clear any existing errors
     if (firstNameError == null && lastNameError == null) {
@@ -79,7 +81,7 @@ class GeneralOnboardingCubit extends Cubit<GeneralOnboardingState> {
         lastNameError: () => null,
         isButtonEnabled: false, // Reset button for next page
       ));
-      
+
       // Navigate to user type page
       Navigator.of(context).pushNamed(RoutesName.onboardingStep2);
       return;
@@ -107,17 +109,18 @@ class GeneralOnboardingCubit extends Cubit<GeneralOnboardingState> {
     if (state.selectedUserType == null) {
       return;
     }
-    
-    AppLogger.info('Onboarding: Selected user type - ${state.selectedUserType}');
-    
+
+    AppLogger.info(
+        'Onboarding: Selected user type - ${state.selectedUserType}');
+
     // Reset button state for next page
     emit(state.copyWith(isButtonEnabled: false));
-    
+
     // Navigate based on user type
     if (state.selectedUserType == 'resident') {
-      // Pass user data to resident flow
+      // Pass user data to claim permit flow
       Navigator.of(context).pushNamed(
-        RoutesName.onboardingResidentStep1,
+        RoutesName.claimPermitSetupAddress,
         arguments: {
           'firstName': firstNameController.text.trim(),
           'lastName': lastNameController.text.trim(),

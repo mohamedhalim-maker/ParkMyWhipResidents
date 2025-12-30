@@ -50,8 +50,9 @@ class ImageUploadWidget extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: AppColor.grey400.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: Offset(0, 3),
+            blurRadius: 32,
+            spreadRadius: 0,
+            offset: const Offset(0, 5),
           ),
         ],
       ),

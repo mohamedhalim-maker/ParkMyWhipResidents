@@ -5,7 +5,7 @@ import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/community_selection_bottom_sheet.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/claim_permit/community_selection_bottom_sheet.dart';
 
 /// A clickable field that allows users to choose their community
 class ChooseCommunityField extends StatelessWidget {
@@ -29,8 +29,9 @@ class ChooseCommunityField extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: AppColor.grey400.withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: Offset(0, 3),
+              blurRadius: 32,
+              spreadRadius: 0,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -42,18 +43,17 @@ class ChooseCommunityField extends StatelessWidget {
               size: 16.w,
               color: AppColor.grey700,
             ),
-            
+
             horizontalSpace(12),
-            
+
             // Text
             Expanded(
               child: Text(
                 selectedCommunity ?? OnboardingStrings.chooseYourCommunity,
-                style:AppTextStyles.urbanistFont14Grey700Regular1_28,
-                    
+                style: AppTextStyles.urbanistFont14Grey700Regular1_28,
               ),
             ),
-            
+
             // Arrow icon
             Icon(
               Icons.chevron_right,

@@ -7,7 +7,7 @@ The onboarding feature collects essential user information after successful auth
 ## 🏗️ Architecture
 
 This feature follows **Clean Architecture** with clear separation of concerns:
-- **Data Layer**: Models (`OnboardingData`, `PermitPlanModel`) and services
+- **Data Layer**: Models (`OnboardingDataModel`, `PermitPlanModel`, `UserType`) and services
 - **Domain Layer**: 6 validation functions (pure logic, no Flutter dependencies)
 - **Presentation Layer**: 2 singleton cubits, 9 pages, 14 reusable widgets
 
@@ -17,8 +17,9 @@ This feature follows **Clean Architecture** with clear separation of concerns:
 lib/src/features/onboarding/
 ├── data/
 │   ├── models/
-│   │   ├── onboarding_data_model.dart        # Aggregated onboarding data (TODO)
-│   │   └── permit_plan_model.dart            # ✅ Permit plan (Weekly/Monthly/Yearly)
+│   │   ├── onboarding_data_model.dart        # ✅ Aggregated onboarding data
+│   │   ├── permit_plan_model.dart            # ✅ Permit plan (Weekly/Monthly/Yearly)
+│   │   └── user_type.dart                    # ✅ Enum for Resident/Visitor
 │   └── services/
 │       └── onboarding_service.dart           # Save to Supabase (TODO)
 │
@@ -64,7 +65,78 @@ lib/src/features/onboarding/
 ```
 
 ---
+� Data Models
 
+### OnboardingDataModel ✅
+
+**Purpose**: Aggregates all data collected during the onboarding flow (Steps 1-7+)
+
+**Location**: `lib/src/features/onboarding/data/models/onboarding_data_model.dart`
+
+**Fields (16 total)**:
+- **General**: firstName, lastName, userType
+- **Resident**: selectedCommunity, unitNumber, buildingNumber, selectedPermitPlan
+- **Vehicle**: plateNumber, vehicleMake, vehicleModel, vehicleColor, vehicleYear
+- **Documents**: licenseImagePath, registrationImagePath, insuranceFilePath, insuranceIsImage
+
+**Key Features**:
+- Plain Dart class with `copyWith()` method
+- `fullName` getter (combines firstName + lastName)
+- `isGeneralOnboardingComplete` - Checks Steps 1-2
+- `isResidentOnboardingComplete` - Checks all 7 resident steps
+- `isOnboardingComplete` - Checks entire flow based on userType
+- `toJson()` / `fromJson()` for Supabase integration
+- Equality operators (== and hashCode)
+
+**Usage**:
+```dart
+final data = OnboardingDataModel(
+  firstName: 'John',
+  lastName: 'Doe',
+  userType: UserType.resident,
+  selectedCommunity: 'Downtown Plaza',
+  // ... other fields
+);
+
+final isComplete = data.isResidentOnboardingComplete; // true/false
+final fullName = data.fullName; // "John Doe"
+```
+
+### UserType Enum ✅
+
+**Purpose**: Represents user type selection (Resident or Visitor)
+
+**Location**: `lib/src/features/onboarding/data/models/user_type.dart`
+
+**Values**:
+- `UserType.resident`
+- `UserType.visitor`
+
+**Extensions**:
+- `displayName` - Returns "Resident" or "Visitor" (for UI)
+- `value` - Returns "resident" or "visitor" (for storage/API)
+- `toUserType()` - Converts String to UserType enum
+
+**Usage**:
+```dart
+final type = UserType.resident;
+print(type.displayName);  // "Resident"
+print(type.value);        // "resident"
+
+final parsed = "visitor".toUserType(); // UserType.visitor
+```
+
+### PermitPlanModel ✅
+
+**Purpose**: Represents permit plan options (Weekly/Monthly/Yearly)
+
+**Location**: `lib/src/features/onboarding/data/models/permit_plan_model.dart`
+
+*See existing implementation in codebase*
+
+---
+
+## �
 ## 🔄 State Management
 
 ### Two Singleton Cubits
@@ -152,7 +224,7 @@ lib/src/features/onboarding/
 
 ## ✅ Completed Features
 
-### Pages (9/9) ✅
+### Pages (10/10) ✅
 
 | Step | Page | Features | State Management |
 |------|------|----------|------------------|
@@ -165,6 +237,7 @@ lib/src/features/onboarding/
 | **R5** | UploadDrivingLicensePage | License image upload | ResidentOnboardingCubit |
 | **R6** | UploadVehicleRegistrationPage | Vehicle registration image upload | ResidentOnboardingCubit |
 | **R7** | UploadInsurancePage | Insurance file upload (PDF/Image) | ResidentOnboardingCubit |
+| **Confirm** | ConfirmDetailsPage | Read-only review of all collected data | ResidentOnboardingCubit |
 
 ### Validators (6/6) ✅
 
@@ -202,6 +275,41 @@ lib/src/features/onboarding/
 ---
 
 ## 🎯 Recent Updates
+
+### Confirmation Page Complete ✅
+
+**ConfirmDetailsPage** - Read-only review page for all collected onboarding data
+
+**Features**:
+- **Two display containers** using VehicleInfoHeader styling
+- **Permit Plan Container**: Shows permit type, expiration date, cost, and user type badge
+- **Vehicle & Community Container**: Displays plate number (boxed), vehicle details, and address
+- **Read-only**: No editing, only review
+- **Smart back navigation**: Returns to Step 7 with next button enabled
+- **Expiration date calculation**: Automatic based on permit plan type (Weekly: +7 days, Monthly: +30 days, Yearly: +365 days)
+- **Continue to Payment button**: Placeholder for future payment integration
+
+**New Model Features**:
+- `OnboardingDataModel.permitExpirationDate` - DateTime getter that calculates expiration
+- `OnboardingDataModel.formattedExpirationDate` - String getter returns "DD/MM/YYYY"
+
+**New Cubit Method**:
+- `enableButton()` - Helper method to enable next button (used when navigating back)
+
+**UI Components**:
+- Container 1: Permit details + Resident badge (right-aligned, dark background)
+- Container 2: Plate number in bordered box + vehicle info + community/building/unit
+- Same shadow and border styling as VehicleInfoHeader
+- ContactUsText at bottom
+- Single "Continue to Payment" button (full width)
+
+**Navigation Flow**:
+- From: Upload Insurance (Step 7)
+- To: Payment page (TBD)
+
+**Route**: `/confirm-details`
+
+---
 
 ### Step 7 Complete ✅
 
@@ -421,9 +529,10 @@ CustomTextField(
   showTitle: false,
 )
 ```
-
-**Result**: Looks like one container with divider ✅
-
+x] OnboardingDataModel ✅
+- [x] UserType enum ✅
+- [ ] OnboardingService implementation
+- [ ] Supabase integration (file upload + data save)
 ### 6. Two-State UI Toggle
 
 **Problem**: Need different UI for empty vs filled state
@@ -440,20 +549,21 @@ Visibility(
   child: VehicleInfoHeader(...),  // + icon
 )
 Visibility(
-  visible: state.showVehicleForm,
-  child: VehicleInfoForm(...),    // 5 fields
-)
-```
+  visible: state41 total
+- Pages: 9 (2 general + 7 resident)
+- Cubits: 2 (singleton)
+- States: 2 (25 total fields: 4 general + 21 resident)
+- Models: 3 (OnboardingDataModel, PermitPlanModel, UserType enum
 
 **Result**: Click header → show form. Press back → hide form. ✅
 
 ### 7. CustomTextField Enhancements
-
-**New Parameters**:
-- `showError` (default: true) - Show error text or just red border
-- `showTitle` (default: true) - Show title label or hide
-- `borderRadius` (default: 10) - Custom border radius
-
+4100+
+- Pages: ~1050
+- Cubits: ~850
+- Widgets: ~1100
+- Validators: ~160
+- Models: ~400 (OnboardingDataModel + PermitPlanModel + UserType)
 **Use Cases**:
 - **Connected fields**: No title, no error text, custom borders (Unit + Building)
 - **Inline validation**: Red border only, no error message (just visual feedback)
@@ -484,8 +594,9 @@ CustomTextField(
 - [x] Step 5: Upload License ✅
 - [x] Step 6: Upload Vehicle Registration ✅
 - [x] Step 7: Upload Insurance ✅
-- [ ] Step 8: TBD
-- [ ] Final submission
+- [x] Confirmation Page ✅
+- [ ] Payment integration
+- [ ] Final submission to Supabase
 
 ### Phase 2: Visitor Flow
 - [ ] Visitor pages

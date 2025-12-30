@@ -33,12 +33,14 @@ class RoutesName {
   static const onboardingStep1 = '/onboarding-step-1';
   static const onboardingStep2 = '/onboarding-step-2';
 
-  // Resident flow routes
-  static const onboardingResidentStep1 = '/onboarding-resident-step-1';
-  static const onboardingResidentStep2 = '/onboarding-resident-step-2';
-  static const onboardingResidentStep3 = '/onboarding-resident-step-3';
-  static const onboardingResidentStep4 = '/onboarding-resident-step-4';
-  static const onboardingResidentStep5 = '/onboarding-resident-step-5';
-  static const onboardingResidentStep6 = '/onboarding-resident-step-6';
-  static const onboardingResidentStep7 = '/onboarding-resident-step-7';
+  // Claim Permit flow routes
+  static const claimPermitSetupAddress = '/claim-permit-setup-address';
+  static const claimPermitAddBuildingUnit = '/claim-permit-add-building-unit';
+  static const claimPermitSelectPermitPlan = '/claim-permit-select-permit-plan';
+  static const claimPermitAddVehicleInfo = '/claim-permit-add-vehicle-info';
+  static const claimPermitUploadLicense = '/claim-permit-upload-license';
+  static const claimPermitUploadRegistration =
+      '/claim-permit-upload-registration';
+  static const claimPermitUploadInsurance = '/claim-permit-upload-insurance';
+  static const claimPermitConfirmDetails = '/claim-permit-confirm-details';
 }

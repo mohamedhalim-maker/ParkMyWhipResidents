@@ -5,11 +5,11 @@ import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_state.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/contact_us_text.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/step_progress_indicator.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/choose_community_field.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/claim_permit/choose_community_field.dart';
 
 class SetupAddressPage extends StatelessWidget {
   const SetupAddressPage({super.key});
@@ -21,9 +21,9 @@ class SetupAddressPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: BlocBuilder<ResidentOnboardingCubit, ResidentOnboardingState>(
+          child: BlocBuilder<ClaimPermitCubit, ClaimPermitState>(
             builder: (context, state) {
-              final cubit = context.read<ResidentOnboardingCubit>();
+              final cubit = context.read<ClaimPermitCubit>();
 
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -58,7 +58,7 @@ class SetupAddressPage extends StatelessWidget {
 
                     // Choose community field
                     ChooseCommunityField(
-                      selectedCommunity: state.selectedCommunity,
+                      selectedCommunity: state.data.selectedCommunity,
                     ),
 
                     verticalSpace(16),

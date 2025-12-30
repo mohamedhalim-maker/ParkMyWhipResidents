@@ -7,14 +7,14 @@ import 'package:park_my_whip_residents/src/features/onboarding/data/models/onboa
 /// - Checking onboarding completion status
 /// - Updating user profile with collected information
 class OnboardingService {
-  static const String _usersTable = 'users';
+  // static const String _usersTable = 'users'; // TODO: Use when implementing
 
   /// Save onboarding data to the database
   /// Updates the user record with all collected information
   /// and sets onboarding_completed flag to true
   Future<void> saveOnboardingData({
     required String userId,
-    required OnboardingData data,
+    required OnboardingDataModel data,
   }) async {
     // TODO: Implement saveOnboardingData
     // 1. Update users table with onboarding data
@@ -31,7 +31,7 @@ class OnboardingService {
   }
 
   /// Get existing onboarding data (for resume/edit)
-  Future<OnboardingData?> getOnboardingData(String userId) async {
+  Future<OnboardingDataModel?> getOnboardingData(String userId) async {
     // TODO: Implement getOnboardingData
     // Fetch user data from users table
     throw UnimplementedError();

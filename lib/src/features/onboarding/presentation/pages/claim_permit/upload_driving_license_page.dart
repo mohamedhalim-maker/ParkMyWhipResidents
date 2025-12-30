@@ -1,36 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_text_button.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/data/models/permit_plan_model.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/helpers/claim_permit_document_handler.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/contact_us_text.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/step_progress_indicator.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/permit_plan_card.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/claim_permit/image_upload_widget.dart';
 
-class SelectPermitPlanPage extends StatelessWidget {
-  const SelectPermitPlanPage({super.key});
+class UploadDrivingLicensePage extends StatelessWidget {
+  const UploadDrivingLicensePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          context.read<ResidentOnboardingCubit>().clearPermitPlanData();
+          context.read<ClaimPermitCubit>().clearLicenseData();
         }
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: BlocBuilder<ResidentOnboardingCubit, ResidentOnboardingState>(
+        body: BlocBuilder<ClaimPermitCubit, ClaimPermitState>(
           builder: (context, state) {
-            final cubit = context.read<ResidentOnboardingCubit>();
-
+            final cubit = context.read<ClaimPermitCubit>();
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: Column(
@@ -38,47 +37,32 @@ class SelectPermitPlanPage extends StatelessWidget {
                 children: [
                   verticalSpace(60),
 
-                  // Step 3 label
-                  Text(
-                    OnboardingStrings.step3,
-                    style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
-                  ),
-
-                  verticalSpace(8),
-
                   // Page title
                   Text(
-                    OnboardingStrings.howLongWouldYouLikeAPermitFor,
+                    OnboardingStrings.uploadDrivingLicense,
                     style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
-                  ),
-
-                  verticalSpace(8),
-
-                  // Subtitle
-                  Text(
-                    OnboardingStrings.selectYourPermitFrequent,
-                    style: AppTextStyles.urbanistFont14Gray800Regular1_4,
                   ),
 
                   verticalSpace(24),
 
-                  // "Permit frequent" label
-                  Text(
-                    OnboardingStrings.permitFrequent,
-                    style: AppTextStyles.urbanistFont14Gray800Regular1_4,
+                  // License upload widget
+                  ImageUploadWidget(
+                    image: state.licenseImage,
+                    fileName: state.data.licenseImagePath?.split('/').last,
+                    isLoading: state.isLoadingImage,
+                    onTap: () => cubit.handleLicenseUpload(context),
+                    onRemove: () => cubit.removeDocument(DocumentType.license),
                   ),
 
-                  verticalSpace(16),
+                  verticalSpace(8),
 
-                  // Permit plan options
-                  ...PermitPlanModel.availablePlans.map((plan) => Padding(
-                        padding: EdgeInsets.only(bottom: 16.h),
-                        child: PermitPlanCard(
-                          plan: plan,
-                          isSelected: state.selectedPermitPlan == plan,
-                          onTap: () => cubit.onPermitPlanSelected(plan),
-                        ),
-                      )),
+                  // Max file size text
+                  Text(
+                    OnboardingStrings.maxFileSize,
+                    style: AppTextStyles.urbanistFont14Gray800Regular1_4
+                        .copyWith(color: AppColor.gray30),
+                  ),
+
                   verticalSpace(8),
 
                   // Contact us text
@@ -86,8 +70,8 @@ class SelectPermitPlanPage extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Step progress indicator (3/8 steps)
-                  const StepProgressIndicator(currentStep: 3, totalSteps: 7),
+                  // Step progress indicator (5/8 steps)
+                  const StepProgressIndicator(currentStep: 5, totalSteps: 7),
 
                   verticalSpace(16),
 
@@ -97,16 +81,13 @@ class SelectPermitPlanPage extends StatelessWidget {
                     children: [
                       CommonTextButton(
                         text: OnboardingStrings.back,
-                        onPressed: () {
-                          cubit.clearPermitPlanData();
-                          Navigator.of(context).pop();
-                        },
+                        onPressed: () => Navigator.of(context).pop(),
                         width: 110.w,
                       ),
                       CommonButton(
                         text: OnboardingStrings.next,
                         onPressed: () =>
-                            cubit.onContinueSelectPermitPlan(context: context),
+                            cubit.onContinueUploadLicense(context: context),
                         isEnabled: state.isButtonEnabled,
                         width: 110.w,
                       ),

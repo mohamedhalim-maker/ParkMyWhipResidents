@@ -8,9 +8,9 @@ import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 import 'package:park_my_whip_residents/src/core/widgets/search_text_field.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/community_selection_item.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/claim_permit/community_selection_item.dart';
 
 /// Shows a bottom sheet for community selection
 void showCommunitySelectionBottomSheet(BuildContext context) {
@@ -22,7 +22,7 @@ void showCommunitySelectionBottomSheet(BuildContext context) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
     ),
     builder: (sheetContext) => BlocProvider.value(
-      value: context.read<ResidentOnboardingCubit>(),
+      value: context.read<ClaimPermitCubit>(),
       child: const _CommunitySelectionBottomSheet(),
     ),
   );
@@ -54,9 +54,9 @@ class _CommunitySelectionBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ResidentOnboardingCubit, ResidentOnboardingState>(
+    return BlocBuilder<ClaimPermitCubit, ClaimPermitState>(
       builder: (context, state) {
-        final cubit = context.read<ResidentOnboardingCubit>();
+        final cubit = context.read<ClaimPermitCubit>();
         final filteredCommunities = state.filteredCommunities;
 
         return Container(

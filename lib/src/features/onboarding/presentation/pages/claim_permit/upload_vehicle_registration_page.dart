@@ -7,28 +7,29 @@ import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_text_button.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/helpers/claim_permit_document_handler.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/contact_us_text.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/step_progress_indicator.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/image_upload_widget.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/claim_permit/image_upload_widget.dart';
 
-class UploadDrivingLicensePage extends StatelessWidget {
-  const UploadDrivingLicensePage({super.key});
+class UploadVehicleRegistrationPage extends StatelessWidget {
+  const UploadVehicleRegistrationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          context.read<ResidentOnboardingCubit>().clearLicenseData();
+          context.read<ClaimPermitCubit>().clearRegistrationData();
         }
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: BlocBuilder<ResidentOnboardingCubit, ResidentOnboardingState>(
+        body: BlocBuilder<ClaimPermitCubit, ClaimPermitState>(
           builder: (context, state) {
-            final cubit = context.read<ResidentOnboardingCubit>();
+            final cubit = context.read<ClaimPermitCubit>();
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: Column(
@@ -38,19 +39,20 @@ class UploadDrivingLicensePage extends StatelessWidget {
 
                   // Page title
                   Text(
-                    OnboardingStrings.uploadDrivingLicense,
+                    OnboardingStrings.uploadVehicleRegistration,
                     style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
                   ),
 
                   verticalSpace(24),
 
-                  // License upload widget
+                  // Registration upload widget
                   ImageUploadWidget(
-                    image: state.licenseImage,
-                    fileName: state.licenseFileName,
+                    image: state.registrationImage,
+                    fileName: state.data.registrationImagePath?.split('/').last,
                     isLoading: state.isLoadingImage,
-                    onTap: () => cubit.handleLicenseUpload(context),
-                    onRemove: () => cubit.removeLicenseImage(),
+                    onTap: () => cubit.handleRegistrationUpload(context),
+                    onRemove: () =>
+                        cubit.removeDocument(DocumentType.registration),
                   ),
 
                   verticalSpace(8),
@@ -69,8 +71,8 @@ class UploadDrivingLicensePage extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Step progress indicator (5/8 steps)
-                  const StepProgressIndicator(currentStep: 5, totalSteps: 7),
+                  // Step progress indicator (6/8 steps)
+                  const StepProgressIndicator(currentStep: 6, totalSteps: 7),
 
                   verticalSpace(16),
 
@@ -85,8 +87,8 @@ class UploadDrivingLicensePage extends StatelessWidget {
                       ),
                       CommonButton(
                         text: OnboardingStrings.next,
-                        onPressed: () =>
-                            cubit.onContinueUploadLicense(context: context),
+                        onPressed: () => cubit.onContinueUploadRegistration(
+                            context: context),
                         isEnabled: state.isButtonEnabled,
                         width: 110.w,
                       ),

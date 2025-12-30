@@ -4,13 +4,13 @@ import 'package:park_my_whip_residents/src/core/constants/colors.dart';
 import 'package:park_my_whip_residents/src/core/constants/strings.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/custom_text_field.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_state.dart';
 
 class VehicleInfoForm extends StatelessWidget {
   const VehicleInfoForm({super.key, required this.cubit, required this.state});
-  final ResidentOnboardingCubit cubit;
-  final ResidentOnboardingState state;
+  final ClaimPermitCubit cubit;
+  final ClaimPermitState state;
 
   @override
   Widget build(BuildContext context) {

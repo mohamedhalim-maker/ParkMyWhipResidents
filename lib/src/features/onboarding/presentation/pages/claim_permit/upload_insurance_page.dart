@@ -7,28 +7,29 @@ import 'package:park_my_whip_residents/src/core/constants/text_style.dart';
 import 'package:park_my_whip_residents/src/core/helpers/spacing.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_button.dart';
 import 'package:park_my_whip_residents/src/core/widgets/common_text_button.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_cubit.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/resident/resident_onboarding_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_cubit.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/claim_permit_state.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/cubit/claim_permit/helpers/claim_permit_document_handler.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/contact_us_text.dart';
 import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/general/step_progress_indicator.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/resident/image_upload_widget.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/presentation/widgets/claim_permit/image_upload_widget.dart';
 
-class UploadVehicleRegistrationPage extends StatelessWidget {
-  const UploadVehicleRegistrationPage({super.key});
+class UploadInsurancePage extends StatelessWidget {
+  const UploadInsurancePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          context.read<ResidentOnboardingCubit>().clearRegistrationData();
+          context.read<ClaimPermitCubit>().clearInsuranceData();
         }
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: BlocBuilder<ResidentOnboardingCubit, ResidentOnboardingState>(
+        body: BlocBuilder<ClaimPermitCubit, ClaimPermitState>(
           builder: (context, state) {
-            final cubit = context.read<ResidentOnboardingCubit>();
+            final cubit = context.read<ClaimPermitCubit>();
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w),
               child: Column(
@@ -38,19 +39,22 @@ class UploadVehicleRegistrationPage extends StatelessWidget {
 
                   // Page title
                   Text(
-                    OnboardingStrings.uploadVehicleRegistration,
+                    OnboardingStrings.uploadYourInsurance,
                     style: AppTextStyles.urbanistFont28Grey800SemiBold1_2,
                   ),
 
                   verticalSpace(24),
 
-                  // Registration upload widget
+                  // Insurance upload widget
                   ImageUploadWidget(
-                    image: state.registrationImage,
-                    fileName: state.registrationFileName,
+                    image: state.insuranceFile,
+                    fileName: state.data.insuranceFilePath?.split('/').last,
                     isLoading: state.isLoadingImage,
-                    onTap: () => cubit.handleRegistrationUpload(context),
-                    onRemove: () => cubit.removeRegistrationImage(),
+                    onTap: () => cubit.handleInsuranceUpload(context),
+                    onRemove: () =>
+                        cubit.removeDocument(DocumentType.insurance),
+                    emptyStateText: OnboardingStrings.attachFile,
+                    isImageFile: state.data.insuranceIsImage ?? true,
                   ),
 
                   verticalSpace(8),
@@ -69,8 +73,8 @@ class UploadVehicleRegistrationPage extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Step progress indicator (6/8 steps)
-                  const StepProgressIndicator(currentStep: 6, totalSteps: 7),
+                  // Step progress indicator (7/8 steps)
+                  const StepProgressIndicator(currentStep: 7, totalSteps: 7),
 
                   verticalSpace(16),
 
@@ -85,8 +89,8 @@ class UploadVehicleRegistrationPage extends StatelessWidget {
                       ),
                       CommonButton(
                         text: OnboardingStrings.next,
-                        onPressed: () => cubit.onContinueUploadRegistration(
-                            context: context),
+                        onPressed: () =>
+                            cubit.onContinueUploadInsurance(context: context),
                         isEnabled: state.isButtonEnabled,
                         width: 110.w,
                       ),

@@ -57,6 +57,29 @@ class OnboardingValidators {
     return null;
   }
 
+  /// Validate unit number or building number (alphanumeric)
+  /// Returns error message if invalid, null if valid
+  ///
+  /// Rules:
+  /// - Cannot be empty
+  /// - Alphanumeric characters only (letters, numbers, hyphens)
+  /// - Examples: "12B", "A-5", "101", "Building 3"
+  static String? validateUnitNumber(String? value) {
+    if (value == null || value.isEmpty || value.trim().isEmpty) {
+      return 'This field cannot be empty';
+    }
+
+    final trimmedValue = value.trim();
+
+    // Allow alphanumeric characters, spaces, and hyphens
+    final alphanumeric = RegExp(r'^[a-zA-Z0-9\s\-]+$');
+    if (!alphanumeric.hasMatch(trimmedValue)) {
+      return 'Only letters, numbers, and hyphens allowed';
+    }
+
+    return null;
+  }
+
   /// Validate UK plate number
   /// Returns error message if invalid, null if valid
   ///

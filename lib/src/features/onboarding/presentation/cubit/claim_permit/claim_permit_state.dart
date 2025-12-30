@@ -1,96 +1,94 @@
 import 'dart:io';
 import 'package:equatable/equatable.dart';
-import 'package:park_my_whip_residents/src/features/onboarding/data/models/permit_plan_model.dart';
+import 'package:park_my_whip_residents/src/features/onboarding/data/models/onboarding_data_model.dart';
 
-/// State for the resident onboarding flow.
+/// State for the claim permit onboarding flow.
 ///
 /// Holds:
-/// - Button enabled state
-/// - Selected community
-/// - Community search query and filtered list
-/// - Temporary selected community (in bottom sheet)
-/// - Validation errors for unit and building numbers
-/// - Selected permit plan
-/// - Validation errors for vehicle fields
-/// - License image and filename
-/// - Vehicle registration image and filename
-class ResidentOnboardingState extends Equatable {
+/// - OnboardingDataModel (all user data)
+/// - UI state (button enabled, form visibility, loading)
+/// - Community search state (query, filtered list, temp selection)
+/// - Validation errors for all fields
+/// - File objects (license, registration, insurance)
+class ClaimPermitState extends Equatable {
+  /// Holds all the onboarding data collected from the user
+  final OnboardingDataModel data;
+
+  /// Whether the continue/next button is enabled
   final bool isButtonEnabled;
-  final String? selectedCommunity;
+
+  /// Community search query
   final String communitySearchQuery;
+
+  /// Filtered list of communities based on search query
   final List<String> filteredCommunities;
+
+  /// Temporary selected community in the bottom sheet (before confirmation)
   final String? tempSelectedCommunity;
+
+  // Validation errors
   final String? unitNumberError;
   final String? buildingNumberError;
-  final PermitPlanModel? selectedPermitPlan;
   final String? plateNumberError;
   final String? vehicleMakeError;
   final String? vehicleModelError;
   final String? vehicleColorError;
   final String? vehicleYearError;
-  final bool showVehicleForm;
-  final File? licenseImage;
-  final String? licenseFileName;
-  final bool isLoadingImage;
-  final File? registrationImage;
-  final String? registrationFileName;
-  final File? insuranceFile;
-  final String? insuranceFileName;
-  final bool insuranceIsImage;
 
-  const ResidentOnboardingState({
+  /// Whether to show the vehicle form or just the header
+  final bool showVehicleForm;
+
+  /// Loading state for image picking
+  final bool isLoadingImage;
+
+  // File objects for uploaded documents
+  final File? licenseImage;
+  final File? registrationImage;
+  final File? insuranceFile;
+
+  const ClaimPermitState({
+    this.data = const OnboardingDataModel(),
     this.isButtonEnabled = false,
-    this.selectedCommunity,
     this.communitySearchQuery = '',
     this.filteredCommunities = const [],
     this.tempSelectedCommunity,
     this.unitNumberError,
     this.buildingNumberError,
-    this.selectedPermitPlan,
     this.plateNumberError,
     this.vehicleMakeError,
     this.vehicleModelError,
     this.vehicleColorError,
     this.vehicleYearError,
     this.showVehicleForm = false,
-    this.licenseImage,
-    this.licenseFileName,
     this.isLoadingImage = false,
+    this.licenseImage,
     this.registrationImage,
-    this.registrationFileName,
     this.insuranceFile,
-    this.insuranceFileName,
-    this.insuranceIsImage = true,
   });
 
   /// Create a copy with updated fields
-  ResidentOnboardingState copyWith({
+  ClaimPermitState copyWith({
+    OnboardingDataModel? data,
     bool? isButtonEnabled,
-    String? selectedCommunity,
     String? communitySearchQuery,
     List<String>? filteredCommunities,
     String? Function()? tempSelectedCommunity,
     String? Function()? unitNumberError,
     String? Function()? buildingNumberError,
-    PermitPlanModel? Function()? selectedPermitPlan,
     String? Function()? plateNumberError,
     String? Function()? vehicleMakeError,
     String? Function()? vehicleModelError,
     String? Function()? vehicleColorError,
     String? Function()? vehicleYearError,
     bool? showVehicleForm,
-    File? Function()? licenseImage,
-    String? Function()? licenseFileName,
     bool? isLoadingImage,
+    File? Function()? licenseImage,
     File? Function()? registrationImage,
-    String? Function()? registrationFileName,
     File? Function()? insuranceFile,
-    String? Function()? insuranceFileName,
-    bool? insuranceIsImage,
   }) =>
-      ResidentOnboardingState(
+      ClaimPermitState(
+        data: data ?? this.data,
         isButtonEnabled: isButtonEnabled ?? this.isButtonEnabled,
-        selectedCommunity: selectedCommunity ?? this.selectedCommunity,
         communitySearchQuery: communitySearchQuery ?? this.communitySearchQuery,
         filteredCommunities: filteredCommunities ?? this.filteredCommunities,
         tempSelectedCommunity: tempSelectedCommunity != null
@@ -101,9 +99,6 @@ class ResidentOnboardingState extends Equatable {
         buildingNumberError: buildingNumberError != null
             ? buildingNumberError()
             : this.buildingNumberError,
-        selectedPermitPlan: selectedPermitPlan != null
-            ? selectedPermitPlan()
-            : this.selectedPermitPlan,
         plateNumberError: plateNumberError != null
             ? plateNumberError()
             : this.plateNumberError,
@@ -120,47 +115,33 @@ class ResidentOnboardingState extends Equatable {
             ? vehicleYearError()
             : this.vehicleYearError,
         showVehicleForm: showVehicleForm ?? this.showVehicleForm,
-        licenseImage: licenseImage != null ? licenseImage() : this.licenseImage,
-        licenseFileName:
-            licenseFileName != null ? licenseFileName() : this.licenseFileName,
         isLoadingImage: isLoadingImage ?? this.isLoadingImage,
+        licenseImage: licenseImage != null ? licenseImage() : this.licenseImage,
         registrationImage: registrationImage != null
             ? registrationImage()
             : this.registrationImage,
-        registrationFileName: registrationFileName != null
-            ? registrationFileName()
-            : this.registrationFileName,
         insuranceFile:
             insuranceFile != null ? insuranceFile() : this.insuranceFile,
-        insuranceFileName: insuranceFileName != null
-            ? insuranceFileName()
-            : this.insuranceFileName,
-        insuranceIsImage: insuranceIsImage ?? this.insuranceIsImage,
       );
 
   @override
   List<Object?> get props => [
+        data,
         isButtonEnabled,
-        selectedCommunity,
         communitySearchQuery,
         filteredCommunities,
         tempSelectedCommunity,
         unitNumberError,
         buildingNumberError,
-        selectedPermitPlan,
         plateNumberError,
         vehicleMakeError,
         vehicleModelError,
         vehicleColorError,
         vehicleYearError,
         showVehicleForm,
-        licenseImage,
-        licenseFileName,
         isLoadingImage,
+        licenseImage,
         registrationImage,
-        registrationFileName,
         insuranceFile,
-        insuranceFileName,
-        insuranceIsImage,
       ];
 }

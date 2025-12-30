@@ -222,6 +222,19 @@ class OnboardingStrings {
   static const String step7 = 'Step 7';
   static const String uploadYourInsurance = 'Upload Your Insurance';
   static const String attachFile = 'Attach file (PNG,JPG,PDF)';
+
+  // Confirm Details Page
+  static const String confirmYourDetails = 'Confirm your details';
+  static const String reviewAndConfirmYourDetails =
+      'Review and confirm your details';
+  static const String communityAndUnitNumber = 'Community and Unit Number';
+  static const String continueToPayment = 'Continue to Payment';
+  static const String residentPermit = 'Resident Permit -';
+  static const String expiresIn = 'Expires in ';
+  static const String notAvailable = 'N/A';
+  static const String cost = 'Cost : ';
+  static const String building = 'Building ';
+  static const String unit = 'Unit ';
 }
 
 class ImagePickerStrings {
